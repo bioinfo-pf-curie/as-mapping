@@ -11,6 +11,7 @@ do
     case "$1" in
     (-i) id_geno=$2; shift;;
     (-v) vcf_geno=$2; shift;;
+	#(-h) chr=$2; shift;;   # Later be the chromosome specified when the script is called
     (-c) config=$2; shift;;
 	(-h) usage;;
     (--) shift; break;;
@@ -34,6 +35,7 @@ function usage {
     echo -e "Usage : $0"
     echo -e "-i"" <name of the strain>"
     echo -e "-v"" <VCF/BED file with SNPs of the strain>"
+	#echo -e "-h"" <Chromosome to be generated>"
     echo -e "-c"" <Config file>"
 	echo -e "-h"" <help>"
     exit

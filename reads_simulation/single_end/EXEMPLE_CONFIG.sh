@@ -43,7 +43,7 @@ ASspecgeno2=""
 
 #	Directories 
 #		Output directory where new generated files that can be re-used are stored
-main_out="0503_test_data/"
+main_out="data/"
 vcf_outdir=${main_out}"vcfs/"
 fasta_outdir=${main_out}"fastas/"
 bed_outdir=${main_out}"beds/"
