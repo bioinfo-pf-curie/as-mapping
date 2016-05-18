@@ -36,10 +36,20 @@ function usage {
 
 start=`date +%s`
 
+mkdir -p ${main_out}
+
 #### STEP 1 : Generation of the parental X chromosomes
-echo "Generation of the parental X chromosomes ..."
-${simreads}chromosome_parental.sh -v ${vcf_geno1} -i ${id_geno1} -c ${config}
-${simreads}chromosome_parental.sh -v ${vcf_geno2} -i ${id_geno2} -c ${config}
+if [[ ! -e ${fasta_outdir}${id_geno1}.fa ]]
+then
+	echo "Generation of the parental chromosome for ${id_geno1} ..."
+	${simreads}chromosome_parental.sh -v ${vcf_geno1} -i ${id_geno1} -c ${config}
+fi
+if [[ ! -e ${fasta_outdir}${id_geno2}.fa ]]
+then
+	echo "Generation of the parental chromosome for ${id_geno2} ..."
+	${simreads}chromosome_parental.sh -v ${vcf_geno2} -i ${id_geno2} -c ${config}
+fi
+
 
 #### STEP 2 : Generate intervals in BED format (non intergenic region and mappabality == 1 on reference genome)
 echo "Generation of the intervals in BED format ..."

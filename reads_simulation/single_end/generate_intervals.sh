@@ -35,7 +35,6 @@ map_uniq=$RANDOM.maptmp
 # Size of intervals used for the simulation
 inter_size=$read_length # Here the interval chosen depends on the read length chosen for the ART simulation
 
-
 #### Function #### ----------------------------------------------------------------------------------------------------------------
 
 # Get args
