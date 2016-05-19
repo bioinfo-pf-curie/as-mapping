@@ -60,25 +60,26 @@ then
 	fi
 fi
 
-# BED file generation if does not already exists
-if [[ ! -e ${bed_outdir}${int_bed} ]]
+# BED file generation
+echo -e "  |\t$(basename $0) : Generating intervals BED file ..."
+# Select non intergenic variants
+vcf_non_inter=non_inter_$RANDOM.tmp
+# Awk to create intervals of 2*100bp around every SNPs of a VCF files containing differential SNPs between 2 parental genomes in a BED file
+awk -v chr=$chr '{if ($1 ~ /^#/) print; else if ($1 == chr) {split ($8,a,"|"); if (a[5] !~ /intergenic_variant/) print}}' OFS='\t' ${diff_vcf} > $vcf_non_inter
+
+# Intervals from VCF file
+awk -v i=$inter_size '{if ($1 !~ /^#/) print "chr"$1,$2-i,$2+(i-1),$3":"$4"/"$5}' OFS='\t' $vcf_non_inter > $tmp_bed 
+
+# Selection of intervals on mappability if bed specified by user
+if [[ -e ${mappa} ]]
 then
-	echo -e "  |\t$(basename $0) : Generating intervals BED file ..."
-	# Select non intergenic variants
-	vcf_non_inter=non_inter_$RANDOM.tmp
-	# Awk to create intervals of 2*100bp around every SNPs of a VCF files containing differential SNPs between 2 parental genomes in a BED file
-	awk '{if ($1 ~ /^#/) print; else {split ($8,a,"|"); if (a[5] !~ /intergenic_variant/) print}}' OFS='\t' ${diff_vcf} > $vcf_non_inter
-
-	# Intervals from VCF file
-	awk -v i=$inter_size '{if ($1 !~ /^#/) print "chr"$1,$2-i,$2+(i-1),$3":"$4"/"$5}' OFS='\t' $vcf_non_inter > $tmp_bed 
-
 	# Selection of region with mappability == 1
 	awk '{if ($4==1) print}' OFS='\t' $mappa > $map_uniq
-
-	# Selection of intervals on mappability
 	${bedtools} intersect -a ${tmp_bed} -b ${map_uniq} -wa -f 1 > ${bed_outdir}${int_bed}
 	# -f 1 means the mappability has to be 1 on all the interval
-
-	# Cleaning the file
-	rm $tmp_bed $map_uniq $vcf_non_inter
+else
+	mv $tmp_bed ${bed_outdir}${int_bed}
 fi
+
+# Cleaning the file
+rm $tmp_bed $map_uniq $vcf_non_inter

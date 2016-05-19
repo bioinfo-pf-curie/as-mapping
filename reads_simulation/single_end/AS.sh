@@ -54,7 +54,10 @@ fi
 #### STEP 2 : Generate intervals in BED format (non intergenic region and mappabality == 1 on reference genome)
 echo "Generation of the intervals in BED format ..."
 mkdir -p ${bed_outdir}
-${simreads}generate_intervals.sh -c ${config}
+if [[ ! -e ${bed_outdir}${int_bed} ]]
+then
+	${simreads}generate_intervals.sh -c ${config}
+fi
 
 # optional STEP (to create AS) : Separate interval BED file into several BED files
 
