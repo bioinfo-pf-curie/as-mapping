@@ -50,7 +50,7 @@ function usage {
 mkdir -p ${art_outdir} ${bed_outdir}
 
 # Generation of the different fragments in fasta around the SNPs
-fasta=$id_geno".fa"
+fasta=chr${chr}_$id_geno".fa"
 int_fa=${id_geno}_$(basename $bed)
 int_fa=${int_fa%.bed}.fa
 
