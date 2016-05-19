@@ -15,7 +15,7 @@ samtools=/bioinfo/local/build/samtools/samtools/bin/samtools
 checkVariants=/bioinfo/users/khillion/bin/clinTools/check_variants.py
 # Local scripts
 #	path to the directory with the different scripts
-map_path="/bioinfo/users/khillion/AS_proj/mapping_pipeline/v6_0511/"
+map_path="/bioinfo/users/khillion/GIT/as-mapping/mapping_pipeline/"
 extract_SNPs=${map_path}src/extract_snps.py
 genomeMask=${map_path}src/genomeMask.sh
 parental_genomes=${map_path}src/parental_genomes.sh
