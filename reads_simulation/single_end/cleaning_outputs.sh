@@ -39,12 +39,12 @@ function usage {
 #### Main #### --------------------------------------------------------------------------------------------------------------------
 
 # Merging SAM files and converting to BAM
-echo "Rephasing SAM, merging files and converting to BAM ..."
+echo -e "  |\t$(basename $0) : Rephasing SAM, merging files and converting to BAM ..."
 for sam in `ls ${art_outdir}*.sam`
 do
 	if [[ ! -e ${art_outdir}HEADER.tmp ]]
 	then
-		head -2 ${sam} | awk '{if ($1 ~ /^@SQ/) {$2="SN:chrX";print} else print}' OFS='\t' > ${art_outdir}HEADER.tmp # Reads are only mapped on X chromosome in our simulation
+		head -2 ${sam} | awk -v chr=${chr} '{if ($1 ~ /^@SQ/) {$2="SN:chr"chr;print} else print}' OFS='\t' > ${art_outdir}HEADER.tmp
 	fi
 	grep '^@' ${sam} | tail -1 >> ${art_outdir}HEADER.tmp # Get the information of the program used to produced the data
 	awk '{if ($1 !~ /^@/) {split($1,a,":"); split(a[2],b,"-"); $3=a[1]; $4=b[1]+$4; print}}' OFS='\t' ${sam} >> ${art_outdir}SAM.tmp
@@ -54,9 +54,9 @@ cat ${art_outdir}HEADER.tmp ${art_outdir}SAM.tmp > ${art_outdir}${id_geno1}_${id
 ${samtools} view -bS ${art_outdir}${id_geno1}_${id_geno2}.sam > ${art_outdir}${id_geno1}_${id_geno2}.bam
 
 # Merging .fq and compressing
-echo "Merging .fq to ${art_outdir}${id_geno1}_${id_geno2}.fq and compress ..."
+echo -e "  |\t$(basename $0) : Merging .fq to ${art_outdir}${id_geno1}_${id_geno2}.fq and compress ..."
 cat ${art_outdir}*.fq > ${art_outdir}${id_geno1}_${id_geno2}.fq && gzip ${art_outdir}${id_geno1}_${id_geno2}.fq
 
 # Removing temporary files and unused files
-echo "Cleaning files ..."
+echo -e "  |\t$(basename $0) : Cleaning files ..."
 rm ${art_outdir}*.tmp ${art_outdir}*.aln ${art_outdir}*.sam ${art_outdir}*.fq

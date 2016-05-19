@@ -63,22 +63,22 @@ fi
 
 if [[ ! -e ${bed_outdir}other_${int_bed} || ! -e ${bed_outdir}${id_geno1}${int_bed} || ! -e ${bed_outdir}${id_geno2}${int_bed} ]]
 then
-	${bedtools} intersect -a ${bed_outdir}${int_bed} -b ${ASspecgeno1} -wa | uniq > ${bed_outdir}${id_geno1}spec_${int_bed}
-	${bedtools} intersect -a ${bed_outdir}${int_bed} -b ${ASspecgeno2} -wa | uniq > ${bed_outdir}${id_geno2}spec_${int_bed}
-	${bedtools} intersect -a ${bed_outdir}${int_bed} -b ${ASspecgeno1} ${ASspecgeno2} -v | uniq > ${bed_outdir}other_${int_bed}
+	${bedtools} intersect -a ${bed_outdir}${chr}_${int_bed} -b ${ASspecgeno1} -wa | uniq > ${bed_outdir}${id_geno1}spec_${chr}_${int_bed}
+	${bedtools} intersect -a ${bed_outdir}${chr}_${int_bed} -b ${ASspecgeno2} -wa | uniq > ${bed_outdir}${id_geno2}spec_${chr}_${int_bed}
+	${bedtools} intersect -a ${bed_outdir}${chr}_${int_bed} -b ${ASspecgeno1} ${ASspecgeno2} -v | uniq > ${bed_outdir}other_${chr}_${int_bed}
 fi
 
 #### STEP 3 : Generate a chosen number of reads on each interval for the two strains
 echo "Generation of reads with ART ..."
 # AS geno1
-${simreads}generate_reads.sh -i ${id_geno1} -b ${bed_outdir}${id_geno1}spec_${int_bed} -n ${number_reads} -c ${config}
-${simreads}generate_reads.sh -i ${id_geno2} -b ${bed_outdir}${id_geno1}spec_${int_bed} -n $((number_reads/10)) -c ${config}
+${simreads}generate_reads.sh -i ${id_geno1} -b ${bed_outdir}${id_geno1}spec_${chr}_${int_bed} -n ${number_reads} -c ${config}
+${simreads}generate_reads.sh -i ${id_geno2} -b ${bed_outdir}${id_geno1}spec_${chr}_${int_bed} -n $((number_reads/10)) -c ${config}
 # AS geno2
-${simreads}generate_reads.sh -i ${id_geno1} -b ${bed_outdir}${id_geno2}spec_${int_bed} -n $((number_reads/10)) -c ${config}
-${simreads}generate_reads.sh -i ${id_geno2} -b ${bed_outdir}${id_geno2}spec_${int_bed} -n ${number_reads} -c ${config}
+${simreads}generate_reads.sh -i ${id_geno1} -b ${bed_outdir}${id_geno2}spec_${chr}_${int_bed} -n $((number_reads/10)) -c ${config}
+${simreads}generate_reads.sh -i ${id_geno2} -b ${bed_outdir}${id_geno2}spec_${chr}_${int_bed} -n ${number_reads} -c ${config}
 # no AS
-${simreads}generate_reads.sh -i ${id_geno1} -b ${bed_outdir}other_${int_bed} -n ${number_reads} -c ${config}
-${simreads}generate_reads.sh -i ${id_geno2} -b ${bed_outdir}other_${int_bed} -n ${number_reads} -c ${config}
+${simreads}generate_reads.sh -i ${id_geno1} -b ${bed_outdir}other_${chr}_${int_bed} -n $((number_reads/2)) -c ${config}
+${simreads}generate_reads.sh -i ${id_geno2} -b ${bed_outdir}other_${chr}_${int_bed} -n $((number_reads/2)) -c ${config}
 
 #### STEP 4 : Cleaning of the different outputs (rephasing, removing unused files, merging .fq and .sam)
 echo "Merging and Cleaning files ..."

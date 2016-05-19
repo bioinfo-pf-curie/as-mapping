@@ -64,8 +64,8 @@ fi
 
 #### STEP 3 : Generate a chosen number of reads on each interval for the two strains
 echo "Generation of reads with ART ..."
-${simreads}generate_reads.sh -i ${id_geno1} -b ${bed_outdir}${int_bed} -n ${number_reads} -c ${config}
-${simreads}generate_reads.sh -i ${id_geno2} -b ${bed_outdir}${int_bed} -n ${number_reads} -c ${config}
+${simreads}generate_reads.sh -i ${id_geno1} -b ${bed_outdir}${chr}_${int_bed} -n ${number_reads} -c ${config}
+${simreads}generate_reads.sh -i ${id_geno2} -b ${bed_outdir}${chr}_${int_bed} -n ${number_reads} -c ${config}
 
 #### STEP 4 : Cleaning of the different outputs (rephasing, removing unused files, merging .fq and .sam)
 echo "Merging and Cleaning files ..."

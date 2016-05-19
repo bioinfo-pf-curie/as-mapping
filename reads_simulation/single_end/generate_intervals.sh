@@ -52,7 +52,7 @@ function usage {
 if [[ -z $diff_vcf ]]
 then
     vcf=`echo $full_vcf | tr '/' '\n' | tail -1`
-    diff_vcf=$vcf_outdir${vcf%.vcf}$id_geno1"_"$id_geno2".vcf"
+    diff_vcf=$vcf_outdir${vcf%.vcf}_${id_geno1}_${id_geno2}.vcf
     if [[ ! -e $diff_vcf ]]
 	then
     	echo -e "  |\t$(basename $0) : Generating VCF file of different SNPs between $id_geno1 and $id_geno2 ..."
@@ -75,10 +75,10 @@ if [[ -e ${mappa} ]]
 then
 	# Selection of region with mappability == 1
 	awk '{if ($4==1) print}' OFS='\t' $mappa > $map_uniq
-	${bedtools} intersect -a ${tmp_bed} -b ${map_uniq} -wa -f 1 > ${bed_outdir}${int_bed}
+	${bedtools} intersect -a ${tmp_bed} -b ${map_uniq} -wa -f 1 > ${bed_outdir}${chr}_${int_bed}
 	# -f 1 means the mappability has to be 1 on all the interval
 else
-	mv $tmp_bed ${bed_outdir}${int_bed}
+	mv $tmp_bed ${bed_outdir}${chr}_${int_bed}
 fi
 
 # Cleaning the file

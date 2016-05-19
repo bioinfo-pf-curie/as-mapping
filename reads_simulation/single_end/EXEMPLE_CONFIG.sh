@@ -31,7 +31,7 @@ chr=$(basename ${ref%.fa}) && chr=${chr:3}
 vcf_geno1="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specific_vcfs_SANGER/CAST_EiJ/CAST_EiJ.mgp.v5.snps.dbSNP142.vcf"
 vcf_geno2="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specific_vcfs_SANGER/129S1_SvImJ/129S1_SvImJ.mgp.v5.snps.dbSNP142.vcf"
 diff_vcf=""
-full_vcf="/data/annotations/Mouse/variant_informations/mgpV5_mm10/chromosomes/chrX_mgp.v5.merged.snps_all.dbSNP142.vcf"
+full_vcf="/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf"
 
 #	Mappability track (optional) :
 mappa="/data/annotations/Mouse/mappability/mm10/100bp/mm10_100.bed"
