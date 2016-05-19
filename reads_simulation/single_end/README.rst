@@ -28,7 +28,7 @@ The following dependancies are required :
 * BEDTools (version 2.21.0)
 * vcf2diploid (version 0.2.6a)
 * samtools (version )
-* ART (version )
+* `ART <http://www.niehs.nih.gov/research/resources/software/biostatistics/art/>`_ (version ART-ChocolateCherryCake-03-19-2015) 
 
 | To install :
 
