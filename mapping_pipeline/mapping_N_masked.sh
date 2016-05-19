@@ -46,7 +46,7 @@ function usage {
 start=`date +%s`
 
 # Set up output directory for this method of mapping in the main output directory
-sam_out=$sam_out"mapping_N_masked_0_penalty/"
+sam_out=$sam_out"mapping_N_masked/"
 mkdir -p $sam_out
 
 ##### STEP 1 : Generation of N-masked genome ----------------------------------------------------
@@ -94,7 +94,7 @@ fi
 # Updating the location of the bowtie2 indexes
 bowtie2_indexes=$fasta_out$bowtie2_indexes
 
-${bowtie2}bowtie2 $SCORING_OPT --np 0 -p 8 -N 1 -x $bowtie2_indexes$masked_genome -U $fq_reads -S ${sam_out}${masked_genome}.sam
+${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x $bowtie2_indexes$masked_genome -U $fq_reads -S ${sam_out}${masked_genome}.sam
 
 # Transform to BAM format and delete SAM file
 ${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam
@@ -113,9 +113,21 @@ ${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${masked_genome}.bam > 
 echo -e "mapping_N_masked\t${sam_out}mpileup/${masked_genome}.pileup" > ${sam_out}mpileup/CONFIG
 ${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_Nmask.txt
 ${sort_counts} -i ${sam_out}mpileup/counts_mapping_Nmask.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_Nmask.txt
-
 #   Cleaning 
 rm ${sam_out}sorted_${masked_genome}.b* ${sam_out}mpileup/${masked_genome}.pileup
+
+#   Comparison between generated BAM and mapped reads
+gen_bam=${fq_reads%.fq.gz}.bam
+tmpid=$RANDOM
+if [[ -e ${genbam} ]]
+then
+    mkdir -p ${sam_out}comptoGen
+    ${samtools} sort -n ${sam_out}${masked_genome}.bam ${sam_out}nsorted_${masked_genome}
+    ${samtools} sort -n ${gen_bam} ${gen_bam%.bam}_nsorted${tmpid}
+    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${gen_bam%.bam}_nsorted${tmpid}.bam -m ${sam_out}nsorted_${masked_genome}.bam -o comptoGen/
+    # Cleaning
+    rm ${sam_out}nsorted_${masked_genome}.bam ${gen_bam%.bam}_nsorted${tmpid}.bam
+fi
 
 end=`date +%s`
 echo " ======================================================= "

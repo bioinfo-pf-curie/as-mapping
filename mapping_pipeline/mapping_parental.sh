@@ -118,6 +118,21 @@ ${sort_counts} -i ${sam_out}mpileup/counts_mapping_parental.txt -s ${diff_vcf} >
 #   Cleaning 
 rm ${sam_out}sorted_${id_geno1}_${id_geno2}.b* ${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup
 
+#   Comparison between generated BAM and mapped reads
+gen_bam=${fq_reads%.fq.gz}.bam
+tmpid=$RANDOM
+if [[ -e ${genbam} ]]
+then
+    mkdir -p ${sam_out}comptoGen
+    ${samtools} sort -n ${sam_out}selected_${id_geno1}_${id_geno2}.bam ${sam_out}nsorted_selected
+    ${samtools} sort -n ${gen_bam} ${gen_bam%.bam}_nsorted${tmpid}
+    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${gen_bam%.bam}_nsorted${tmpid}.bam -m ${sam_out}nsorted_selected.bam -o comptoGen/
+    # Cleaning
+    rm ${sam_out}nsorted_selected.bam ${gen_bam%.bam}_nsorted${tmpid}.bam
+fi
+
+
+
 end=`date +%s`
 echo " ====================================================== "
 echo "  mapping_parental.sh run in "$((end-start))" seconds."

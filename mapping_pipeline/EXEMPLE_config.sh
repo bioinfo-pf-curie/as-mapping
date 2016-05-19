@@ -21,12 +21,13 @@ genomeMask=${map_path}src/genomeMask.sh
 parental_genomes=${map_path}src/parental_genomes.sh
 diploid_genome=${map_path}src/diploid_genome.sh
 sort_counts=${map_path}src/sort_counts.py
+compMaptoGen=${map_path}src/compMaptoGen.py
 
  
 # ------------ Input(s) ------------
 
 # -- Required for all Mappings
-fq_reads="/bioinfo/users/khillion/AS_proj/generated_reads/0425_s_end_no_errors/CAST_EiJ_129S1_SvImJ.fq.gz"
+fq_reads="READS_PATH"
 ref_geno="/data/annotations/Mouse/mm10/complete/mm10.fa"
 
 # -- Required for Mapping 3 to 6
@@ -64,7 +65,7 @@ vcf_out=${main_out}"vcfs/"
 #	Name of the folder containing bowtie2 indexes, MUST BE in the same folder as the .fa file (only specified folder name here)
 bowtie2_indexes="bowtie2_indexes/"
 #	Output directory for BAM
-sam_out=""
+sam_out="MAPPED_OUTDIR"
 
 
 # -- Files (Do not leave empty)

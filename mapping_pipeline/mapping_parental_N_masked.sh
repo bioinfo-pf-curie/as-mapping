@@ -148,6 +148,22 @@ done
 #   Cleaning 
 rm ${sam_out}sorted_*.b* ${sam_out}mpileup/${masked_genome}.pileup
 
+#   Comparison between generated BAM and mapped reads
+gen_bam=${fq_reads%.fq.gz}.bam
+tmpid=$RANDOM
+if [[ -e ${genbam} ]]
+then
+    mkdir -p ${sam_out}comptoGen1 ${sam_out}comptoGen2
+    ${samtools} sort -n ${sam_out}${geno1_masked_genome}.bam ${sam_out}nsorted_${geno1_masked_genome}
+	${samtools} sort -n ${sam_out}${geno2_masked_genome}.bam ${sam_out}nsorted_${geno2_masked_genome}
+    ${samtools} sort -n ${gen_bam} ${gen_bam%.bam}_nsorted${tmpid}
+    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${gen_bam%.bam}_nsorted${tmpid}.bam -m ${sam_out}nsorted_${geno1_masked_genome}.bam -o comptoGen1/
+    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${gen_bam%.bam}_nsorted${tmpid}.bam -m ${sam_out}nsorted_${geno2_masked_genome}.bam -o comptoGen2/
+    # Cleaning
+    rm ${sam_out}nsorted_${geno1_masked_genome}.bam ${sam_out}nsorted_${geno2_masked_genome}.bam ${gen_bam%.bam}_nsorted${tmpid}.bam
+fi
+
+
 end=`date +%s`
 echo " ============================================================== "
 echo "  mapping_parental_N_masked.sh run in "$((end-start))" seconds."
