@@ -112,55 +112,54 @@ fi
 # Updating the location of the bowtie2 indexes
 bowtie2_indexes=$fasta_out$bowtie2_indexes
 
-${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x ${bowtie2_indexes}${geno1_masked_genome} -U ${fq_reads} -S ${sam_out}${geno1_masked_genome}.sam
-${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x ${bowtie2_indexes}${geno2_masked_genome} -U ${fq_reads} -S ${sam_out}${geno2_masked_genome}.sam
+#${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x ${bowtie2_indexes}${geno1_masked_genome} -U ${fq_reads} -S ${sam_out}${geno1_masked_genome}.sam
+#${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x ${bowtie2_indexes}${geno2_masked_genome} -U ${fq_reads} -S ${sam_out}${geno2_masked_genome}.sam
 
 
 # Transform to BAM format and delete SAM file
-for masked_genome in ${geno1_masked_genome} ${geno2_masked_genome}
-do	
-	${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam
-	rm ${sam_out}${masked_genome}.sam
-done
+#for masked_genome in ${geno1_masked_genome} ${geno2_masked_genome}
+#do	
+#	${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam
+#	rm ${sam_out}${masked_genome}.sam
+#done
 
 ##### STEP 4 : BAM analysis ---------------------------------------------------------------------
 
 mkdir -p ${sam_out}AllelicStatus ${sam_out}mpileup
-rm ${sam_out}mpileup/CONFIG
-for masked_genome in ${geno1_masked_genome} ${geno2_masked_genome}
-do
+#rm ${sam_out}mpileup/CONFIG
+#for masked_genome in ${geno1_masked_genome} ${geno2_masked_genome}
+#do
 	#	Script to add a flag with the allelic status for each read
-	${markAllelicStatus} -i ${sam_out}${masked_genome}.bam -s ${diff_vcf} -r -o ${sam_out}AllelicStatus/${masked_genome}_withAS.bam
-	#   Mpileup to counts the bases present at every SNP positions in the read
-	${samtools} sort ${sam_out}${masked_genome}.bam ${sam_out}sorted_${masked_genome} && ${samtools} index ${sam_out}sorted_${masked_genome}.bam
-	${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${masked_genome}.bam > ${sam_out}mpileup/${masked_genome}.pileup
-	echo -e "${masked_genome}\t${sam_out}mpileup/${masked_genome}.pileup" >> ${sam_out}mpileup/CONFIG
-done
-${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_parentalNmask.txt
-${sort_counts} -i ${sam_out}mpileup/counts_mapping_parentalNmask.txt -s ${diff_vcf} > ${sam_out}mpileup/counts_parentalNmask.txt
+#	${markAllelicStatus} -i ${sam_out}${masked_genome}.bam -s ${diff_vcf} -r -o ${sam_out}AllelicStatus/${masked_genome}_withAS.bam
+#	#   Mpileup to counts the bases present at every SNP positions in the read
+#	${samtools} sort ${sam_out}${masked_genome}.bam ${sam_out}sorted_${masked_genome} && ${samtools} index ${sam_out}sorted_${masked_genome}.bam
+#	${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${masked_genome}.bam > ${sam_out}mpileup/${masked_genome}.pileup
+#	echo -e "${masked_genome}\t${sam_out}mpileup/${masked_genome}.pileup" >> ${sam_out}mpileup/CONFIG
+#done
+#${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_parentalNmask.txt
+#${sort_counts} -i ${sam_out}mpileup/counts_mapping_parentalNmask.txt -s ${diff_vcf} > ${sam_out}mpileup/counts_parentalNmask.txt
 
 #	Split both counts for each genotype
-for masked_genome in ${geno1_masked_genome} ${geno2_masked_genome}
-do
-	awk -v p=${masked_genome} '{if ($1 ~ p) print}' ${sam_out}mpileup/counts_parentalNmask.txt > ${sam_out}mpileup/final_counts_${masked_genome}.txt
-done
+#for masked_genome in ${geno1_masked_genome} ${geno2_masked_genome}
+#do
+#	awk -v p=${masked_genome} '{if ($1 ~ p) print}' ${sam_out}mpileup/counts_parentalNmask.txt > ${sam_out}mpileup/final_counts_${masked_genome}.txt
+#done
 
 #   Cleaning 
-rm ${sam_out}sorted_*.b* ${sam_out}mpileup/${masked_genome}.pileup
+#rm ${sam_out}sorted_*.b* ${sam_out}mpileup/${masked_genome}.pileup
 
 #   Comparison between generated BAM and mapped reads
 gen_bam=${fq_reads%.fq.gz}.bam
-tmpid=$RANDOM
-if [[ -e ${genbam} ]]
+if [[ -e ${gen_bam} ]]
 then
-    mkdir -p ${sam_out}comptoGen1 ${sam_out}comptoGen2
+    mkdir -p ${sam_out}comptoGen_from${id_geno1} ${sam_out}comptoGen_from${id_geno2}
     ${samtools} sort -n ${sam_out}${geno1_masked_genome}.bam ${sam_out}nsorted_${geno1_masked_genome}
 	${samtools} sort -n ${sam_out}${geno2_masked_genome}.bam ${sam_out}nsorted_${geno2_masked_genome}
-    ${samtools} sort -n ${gen_bam} ${gen_bam%.bam}_nsorted${tmpid}
-    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${gen_bam%.bam}_nsorted${tmpid}.bam -m ${sam_out}nsorted_${geno1_masked_genome}.bam -o comptoGen1/
-    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${gen_bam%.bam}_nsorted${tmpid}.bam -m ${sam_out}nsorted_${geno2_masked_genome}.bam -o comptoGen2/
+    ${samtools} sort -n ${gen_bam} ${sam_out}nsorted_generated
+    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_${geno1_masked_genome}.bam -o ${sam_out}comptoGen_from${id_geno1}/
+    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_${geno2_masked_genome}.bam -o ${sam_out}comptoGen_from${id_geno2}/
     # Cleaning
-    rm ${sam_out}nsorted_${geno1_masked_genome}.bam ${sam_out}nsorted_${geno2_masked_genome}.bam ${gen_bam%.bam}_nsorted${tmpid}.bam
+    rm ${sam_out}nsorted_${geno1_masked_genome}.bam ${sam_out}nsorted_${geno2_masked_genome}.bam ${sam_out}nsorted_generated.bam
 fi
 
 
