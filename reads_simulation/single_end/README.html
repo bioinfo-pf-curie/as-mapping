@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<p>Quick Start Guide for single-end reads Simulation <em>*</em>**************</p>
+<p>This page is a quick start guide, please read the full <a href="link">online manual</a> for more information.</p>
+<p>See NEWS for information about changes in this and previous versions</p>
+<h1 id="what-is-it">What is it ?</h1>
+<p>This pipeline was designed for the simulation of single-end reads</p>
+<p>For any question about the pipeline, please contact <script type="text/javascript">
+<!--
+h='&#x63;&#x75;&#114;&#x69;&#x65;&#46;&#102;&#114;';a='&#64;';n='&#x6b;&#x65;&#110;&#122;&#x6f;&#46;&#104;&#x69;&#108;&#108;&#x69;&#x6f;&#110;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x6b;&#x65;&#110;&#122;&#x6f;&#46;&#104;&#x69;&#108;&#108;&#x69;&#x6f;&#110;&#32;&#x61;&#116;&#32;&#x63;&#x75;&#114;&#x69;&#x65;&#32;&#100;&#x6f;&#116;&#32;&#102;&#114;</noscript></p>
+<h1 id="how-to-install-it">How to install it ?</h1>
+<p>The following dependancies are required :</p>
+<ul>
+<li>BEDTools (version 2.21.0)</li>
+<li>vcf2diploid (version 0.2.6a)</li>
+<li>samtools (version )</li>
+<li>ART (version )</li>
+</ul>
+<p>To install :</p>
+<pre class="sourceCode guess"><code>tar -zxvf master.tar.gz
+cd pip-master
+make CONFIG_SYS=config-install.txt install</code></pre>
+<table>
+<col width="17%" />
+<col width="79%" />
+<thead>
+<tr class="header">
+<th align="left">SYSTEM CONFIGUR</th>
+<th align="left">ATION</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">PREFIX</td>
+<td align="left">Path to installation folder</td>
+</tr>
+<tr class="even">
+<td align="left">...</td>
+<td align="left">...</td>
+</tr>
+</tbody>
+</table>
+<h1 id="input-files">Input Files</h1>
+<ol style="list-style-type: decimal">
+<li><strong>A BED file</strong> of ...</li>
+</ol>
+<!-- -->
+
+<pre><code>chr1   0       16007
+chr1   16007   24571
+(...)</code></pre>
+<p>(...)</p>
+<h1 id="how-to-use-it">How to use it ?</h1>
+<ol style="list-style-type: decimal">
+<li>First have a look at the help message !</li>
+</ol>
+<pre class="sourceCode guess"><code>command --help
+usage : command -h
+Use option -h|--help for more information</code></pre>
+<p>(...)</p>
+<h1 id="test-dataset">Test dataset</h1>
+</body>
+</html>
