@@ -25,9 +25,9 @@ How to install it ?
 
 The following dependancies are required :
 
-* BEDTools (version 2.21.0)
-* vcf2diploid (version 0.2.6a)
-* samtools (version )
+* `BEDTools <http://bedtools.readthedocs.io/en/latest/>`_ (version 2.21.0)
+* `vcf2diploid (from AlleleSeq) <http://alleleseq.gersteinlab.org/home.html>`_ (version 0.2.6a)
+* `Samtools <http://samtools.sourceforge.net>`_ (version 1.1)
 * `ART <http://www.niehs.nih.gov/research/resources/software/biostatistics/art/>`_ (version ART-ChocolateCherryCake-03-19-2015) 
 
 | To install :
