@@ -2,10 +2,10 @@
 # Author(s) : Kenzo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
-#  \\\   Script to perform alignment to a N masked genome
+#  		Script to perform alignment to a N masked genome
 #		STEP 1 : Generation of the N-masked genome (masked bases are those that differ between the two studies strains
 #		STEP 2 : Mapping of the reads on the N-masked genome
-#		STEP 3 : BAM analysis for allele specific studies
+#		STEP 3 : BAM processing for Allele Specific studies
 
 #### Parameters #### --------------------------------------------------------------------------------------------------------------
 
@@ -94,27 +94,27 @@ fi
 # Updating the location of the bowtie2 indexes
 bowtie2_indexes=$fasta_out$bowtie2_indexes
 
-#${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x $bowtie2_indexes$masked_genome -U $fq_reads -S ${sam_out}${masked_genome}.sam
+${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x $bowtie2_indexes$masked_genome -U $fq_reads -S ${sam_out}${masked_genome}.sam
 
 # Transform to BAM format and delete SAM file
-#${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam
-#rm ${sam_out}${masked_genome}.sam
+${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam
+rm ${sam_out}${masked_genome}.sam
 
 ##### STEP 3 : BAM analysis -----------------------------------------------------------
 
 # Script to add a flag with the allelic status for each read 
-#mkdir -p ${sam_out}AllelicStatus
-#${markAllelicStatus} -i ${sam_out}${masked_genome}.bam -s ${diff_vcf} -r -o ${sam_out}AllelicStatus/${masked_genome}_withAS.bam
+mkdir -p ${sam_out}AllelicStatus
+${markAllelicStatus} -i ${sam_out}${masked_genome}.bam -s ${diff_vcf} -r -o ${sam_out}AllelicStatus/${masked_genome}_withAS.bam
 
 #   Mpileup to counts the bases present at every SNP positions in the read
-#mkdir -p ${sam_out}mpileup
-#${samtools} sort ${sam_out}${masked_genome}.bam ${sam_out}sorted_${masked_genome} && ${samtools} index ${sam_out}sorted_${masked_genome}.bam
-#${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${masked_genome}.bam > ${sam_out}mpileup/${masked_genome}.pileup
-#echo -e "mapping_N_masked\t${sam_out}mpileup/${masked_genome}.pileup" > ${sam_out}mpileup/CONFIG
-#${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_Nmask.txt
-#${sort_counts} -i ${sam_out}mpileup/counts_mapping_Nmask.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_Nmask.txt
+mkdir -p ${sam_out}mpileup
+${samtools} sort ${sam_out}${masked_genome}.bam ${sam_out}sorted_${masked_genome} && ${samtools} index ${sam_out}sorted_${masked_genome}.bam
+${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${masked_genome}.bam > ${sam_out}mpileup/${masked_genome}.pileup
+echo -e "mapping_N_masked\t${sam_out}mpileup/${masked_genome}.pileup" > ${sam_out}mpileup/CONFIG
+${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_Nmask.txt
+${sort_counts} -i ${sam_out}mpileup/counts_mapping_Nmask.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_Nmask.txt
 #   Cleaning 
-#rm ${sam_out}sorted_${masked_genome}.b* ${sam_out}mpileup/${masked_genome}.pileup
+rm ${sam_out}sorted_${masked_genome}.b* ${sam_out}mpileup/${masked_genome}.pileup
 
 #   Comparison between generated BAM and mapped reads
 gen_bam=${fq_reads%.fq.gz}.bam

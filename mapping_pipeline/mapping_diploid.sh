@@ -2,10 +2,10 @@
 # Author(s) : Kenzo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
-#  \\\	 Script to perform alignment to a diploid genome
+#  		Script to perform alignment to a diploid genome
 #		STEP 1 : Generation of the diploid genome
 #		STEP 2 : Mapping of the reads on the genome
-#		STEP 3 : BAM analysis for Allele specific analysis
+#		STEP 3 : BAM processing for Allele Specific analysis
 
 #### Parameters #### --------------------------------------------------------------------------------------------------------------
 

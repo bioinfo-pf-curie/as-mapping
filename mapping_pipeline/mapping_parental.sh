@@ -2,10 +2,10 @@
 # Author(s) : Kenzo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
-#  \\\	 Script to perform alignment to parental genomes
+#  		Script to perform alignment to parental genomes
 #		STEP 1 : Generation of parental genomes
 #		STEP 2 : Mapping of the reads on both genomes
-#		STEP 3 : Select best alignement between both genomes and BAM analysis for Allele specific analysis
+#		STEP 3 : Select best alignement between both genomes and BAM processing for Allele Specific analysis
 
 #### Parameters #### --------------------------------------------------------------------------------------------------------------
 
