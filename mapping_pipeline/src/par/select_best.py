@@ -10,7 +10,7 @@
 ## Python version: 2.7
 ## Script description: Script to select a read based on alignment score ("AS:i") mapped on both parental genomes
 
-scriptVersion = '0.1 - 04-29-2016'
+scriptVersion = '0.1 - 05-24-2016'
 
 """
 Script to select a read based on alignment score ("AS:i") mapped on both parental genomes
@@ -46,8 +46,8 @@ def usage():
 
  	"""Usage function"""
  	print "Usage : compGen.py"
-	print "[-1/--par1] <names sorted BAM file of parent 1>"
-	print "[-2/--par2] <names sorted BAM file of parent 2>"
+	print "-1/--par1 <names sorted BAM file of parent 1>"
+	print "-2/--par2 <names sorted BAM file of parent 2>"
 	print "[-f/--fused] <prefix name for output bam>"
 	print "[-o/--output_dir] <Output directory>"
  	print "[-h/--help] <Help>"
