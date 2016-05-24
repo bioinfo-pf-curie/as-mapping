@@ -5,6 +5,10 @@
 # Public License, either Version 2, June 1991 or Version 3, June 2007.
 
 """
+Modification by KHH :
+l.181-183 : Join the header by '\t' instead of ' ' to correspond to the right VCF format
+l.195-197 : Do not add "chr" in front of the chromosome number from the VCF
+
 Script to extract informative SNPs from a multisamples VCF
 If no --ref is specified, use the REF allele as is. Otherwise, replace the REF allele by the specified one.
 Phased data are not considered
