@@ -7,10 +7,27 @@
 ## This software is distributed without any guarantee under the terms of the BSD-3 licence.
 ## See the LICENCE file for details
 
+## --- Modification by Kenzo-Hugo Hillion // 05-24-2016 ---
+
+
 """
-Script to assign an allelic status to a 'N' aligned BAM file
-Note that the VCF file is loaded in RAM.
+Kenzo-Hugo Hillion 05-24-2016 :
+The script has been adapted to mark the Allelic status
+of reads mapped on the reference genome based on the presence
+of SNPs in every reads.
+The script goes through all the bases of every read and check if the
+position is contained in the dictionnary.
+
+Function added :
+	-get_snps_positions(chrom, read, snps);
+
+Function_removed :
+	-get_mismatches_positions(read, base=None);
+	-getGenomePos(read, pos);
+	-get_read_tag(read, tag);
 """
+
+###########  Import  ###########
 
 import getopt
 import sys
@@ -19,6 +36,8 @@ import re
 import pysam
 import time
 
+
+###########  Function(s)  ###########
 
 def usage():
 	"""Usage function"""
@@ -146,99 +165,6 @@ def load_vcf( in_file, filter_qual=False, verbose=False, debug=False ):
 	return snps
 
 
-def get_read_tag(read, tag):
-	"""
-	Return a read's tag
-
-	read  = read object [class pysam.AlignedSegment]	  
-	tag = name of the tag to return [character]
-	"""
-	if t[0] == tag:
-			return tag[1]
-	return None
-
-
-def get_mismatches_positions(read, base=None):
-	"""
-	Extract the mismatch positions within the read for all mismatches or for a specified base
-	Insertion are take into account and extracted from the CIGAR string
-	Mismatch positions are extracted from the MD tag
-	
-	read = read object [class pysam.AlignedSegment]
-	base = optional - base to look at [character]
-
-	"""
-	md = read.get_tag('MD')
-	x = -1 ## 0-based
-	npos = [] ## 0-based
-	digits = []	
-	
-	## Get N pos in the read according to MD tag
-	# for y in range(len(md)):
-	y=0
-	while y < len(md):
-		if md[y].isdigit():
-			digits.append(md[y])
-			#print "digits="+str(md[y])
-		elif not md[y].isalnum(): ## simply ignore deletion
-			y += 1
-			while md[y].isalpha():
-				#print "isAlpha="+md[y]
-				y+=1
-			#x-=1
-			x += int(''.join(digits))
-			digits = []
-			continue
-		elif md[y].isalpha():
-			#print "alpha="+md[y]
-			if len(digits) > 0:
-				offset = int(''.join(digits))
-				if base is None or (base is not None and md[y] == base):
-					npos.append(x + offset + 1)				
-				digits = []
-				x += offset + 1 
-				#print "x pos="+str(x)
-		y+=1
-
-	#print npos
-	## Update N position if an insertion is detected upstream the N position
-	## l is the read based position
-	if read.cigarstring.find("I") != -1:
-		cig = read.cigartuples
-		l = -1
-		for t in cig:
-			if t[0] == 1:
-				for n in range(len(npos)):
-					#print "N=" + str(npos[n]) + " l=" + str(l) + "t=" + str(t)
-					if npos[n] > l:
-						npos[n] = npos[n]+t[1]
-			if int(t[0]) != 3 and int(t[0]) != 2: ## skip splice junction
-				l += t[1]
-	return npos
-
-
-def getGenomePos(read, pos):
-	"""
-	Go from read position to genomic position
-
-	read = read object [class pysam.AlignedSegment]
-	pos = positions to convert [list]
-
-	"""
-
-	## Get genomic position, including Insertion/Deletion
-	ngenomepos = []
-	if len(pos) > 0:
-		genomePos = read.get_reference_positions(full_length=True)
-		for y in pos:
-			if genomePos[y] == None:
-				print >> sys.stderr, "Warning : no genomic position found for ", read.qname, "at position", y
-				ngenomepos.append(None)
-			else:
-				ngenomepos.append(genomePos[y])
-	return ngenomepos
-	
-
 def getBaseAt(read, pos):
 	"""
 	Extract nucleotide within a read at a given set of positions
@@ -307,16 +233,16 @@ def get_snps_positions(chrom, read, snps):
 	chrn = re.sub("^[Cc]hr","",chrom)
 	genomePos = read.pos
 	npos = [] ## 0-based
-	# For every position of the read
+	# For every position of the read, keep the position if the key exists in our SNP dictionnary
 	for pos in range(genomePos,genomePos+100):
 		if snps.has_key((str(chrn), pos, '1')) and snps.has_key((str(chrn), pos, '2')):
 			npos.append(pos)
 	return npos
 
 
+###########  Main  ###########
 
 if __name__ == "__main__":
-
 
 
 	# Read command line arguments
@@ -360,11 +286,8 @@ if __name__ == "__main__":
 	cf_counter = 0
 	SNP_counter = 0
 
-
-	start_time_b = time.time()                                #### To be removed 
 	# Read the SNP file
 	snps = load_vcf(snpFile, filter_qual=False, verbose=verbose, debug=False)
-	print("VCF loaded in %f seconds." % (time.time() - start_time_b))         #### To be removed
 	
 	# Read the SAM/BAM file
 	if verbose:
@@ -391,14 +314,11 @@ if __name__ == "__main__":
 	if verbose:
 		print "## Assigning allele specific information ..."
 
-  
-	start_time = time.time()	
-	
 	for read in infile.fetch(until_eof=True):
 		reads_counter += 1
 		if not read.is_unmapped:## and read.cigarstring.find("D") != -1:
 			read_chrom = infile.getrname(read.tid)
-			SNPreadpos = get_snps_positions(read_chrom, read, snps)
+			SNPreadpos = get_snps_positions(read_chrom, read, snps) 	# Get the positions of the SNPs where the read mapped
 			if (len(SNPreadpos)>0):
 				#SNP_counter += len(Nreadpos)
 				SNP_counter += 1 		# Modified instead of previous line
@@ -429,8 +349,6 @@ if __name__ == "__main__":
 
 		if (reads_counter % 100000 == 0 and verbose):
 			print "##", reads_counter
-
-	# Close handler
  
 	# Write stats file
 	if report:
@@ -449,14 +367,12 @@ if __name__ == "__main__":
 
 		handle_stat.write("Total number of reads\t" + str(reads_counter) + "\t100" + "\n")
 		handle_stat.write("Number of reads with at least one SNP\t" + str(SNP_counter) + "\t" + str(round(float(SNP_counter)/int(reads_counter)*100,3)) + "\n")
-		handle_stat.write("Number of reads assigned to ref genome\t" + str(g1_counter) + "\t" + str(round(float(g1_counter)/int(reads_counter)*100,3)) + "\n")
-		handle_stat.write("Number of reads assigned to alt genome\t" + str(g2_counter) + "\t" + str(round(float(g2_counter)/int(reads_counter)*100,3)) + "\n")
+		handle_stat.write("Number of reads assigned to first genome\t" + str(g1_counter) + "\t" + str(round(float(g1_counter)/int(reads_counter)*100,3)) + "\n")
+		handle_stat.write("Number of reads assigned to second genome\t" + str(g2_counter) + "\t" + str(round(float(g2_counter)/int(reads_counter)*100,3)) + "\n")
 		handle_stat.write("Number of conflicting reads\t" + str(cf_counter) + "\t" + str(round(float(cf_counter)/int(reads_counter)*100,3)) + "\n")
 		handle_stat.write("Number of unassigned reads\t" + str(ua_counter) + "\t" + str(round(float(ua_counter)/int(reads_counter)*100,3)) + "\n")
 		handle_stat.close()
 				
+	# Close handler
 	infile.close()
 	outfile.close()
-
-	print("Assignments done in %f seconds." % (time.time() - start_time))
-	print("Script run in %f seconds." % (time.time() - start_time_b))
