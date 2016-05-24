@@ -13,10 +13,19 @@
 scriptVersion = '0.1 - 05-24-2016'
 
 """
-Input(s): BAM files sorted by names, Strain names, Output directory
-Output(s):	mapping_status.bam 	: BAM file with XM flag (1 : mapped to the correct region, 2 : unmapped or mapped to incorrect region
-			allele_counts.txt	: Counts for each SNPs corresponding to the interval (if no SNP, correspond to the middle of the interval)
-Use: compMaptoGen.py -g generated.bam -m mapped.bam -1 geno1 -2 geno2 -o OUTPUT_DIR/
+Script to compare generated BAM (from ART) to aligned BAM.
+
+	INPUT(s):
+		BAM files sorted by names
+		Strain names
+		Output directory
+	OUTPUT(s):
+		mapping_status.bam 	: BAM file with XM flag (1 : mapped to the correct region, 2 : unmapped or mapped to incorrect region
+		allele_counts.txt	: Counts for each SNPs corresponding to the interval (if no SNP, correspond to the middle of the interval)
+	
+	USE :
+		compMaptoGen.py -g generated.bam -m mapped.bam -1 geno1 -2 geno2 -o OUTPUT_DIR/
+
 """
 
 ###########  Import  ###########
@@ -72,13 +81,15 @@ if __name__ == "__main__":
 	if len(opts) == 0:
 		usage()
 		sys.exit()
-	
-	# Store arguments
+
+	# Default values for arguments	
 	genbam = None
 	mapbam = None
 	strain1 = ""
 	strain2 = ""
 	output_dir = ""
+
+	# Store arguments
 	for opt, arg in opts:
 		if opt in ("-h", "--help"):
 			usage()
@@ -116,7 +127,7 @@ if __name__ == "__main__":
 	output = output_dir + OUTBAM
 	outfile = pysam.AlignmentFile(output, "wb", template=filemapbam)
 
-	# Counting correctly mapped reads
+	# Counting correctly/incorrectly mapped reads
 	tag = "XM"
 	counter_read = 0
 	read_length = 0
