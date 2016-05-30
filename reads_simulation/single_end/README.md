@@ -19,7 +19,7 @@ The following dependancies are required :
 * [vcf2diploid](http://alleleseq.gersteinlab.org/home.html) (version 0.2.6a)
 * [samtools](http://samtools.sourceforge.net) (version 1.1)
 * [ART](http://www.niehs.nih.gov/research/resources/software/biostatistics/art/) (version ART-ChocolateCherryCake-03-19-2015)
-
+* 
 To install :
 
 ```bash
@@ -35,12 +35,15 @@ make CONFIG_SYS=config-install.txt install
 
 ## Input Files
 
-**A BED file** of ...
-
-```
-    chr1   0       16007
-    chr1   16007   24571
-    (...)
+**A CONFIG file** containing:
+* The different path of the tools
+```bash
+bedtools=path_to_bedtools
+art=path_to_desired_art
+vcf2diploid=path_to_vcf2diploid.jar
+samtools=path_to_samtools
+extract_SNPs=path_to_extract_snps_forNmask.py
+simreads=directory_path
 ```
 
 ## How to use it ?
