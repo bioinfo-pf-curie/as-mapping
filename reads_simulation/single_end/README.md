@@ -28,30 +28,29 @@ cd pip-master
 make CONFIG_SYS=config-install.txt install
 ```
 
-  SYSTEM CONFIGURATION     
-  -----------------------------------------------------------------------
-  PREFIX | Path to installation folder
+| SYSTEM CONFIGURATION |
+| -------------------- |
+|PREFIX | Path to installation folder |
 
 
 ## Input Files
 
-1.  **A BED file** of ...
+**A BED file** of ...
 
-<!-- -->
+```
     chr1   0       16007
     chr1   16007   24571
     (...)
+```
 
 ## How to use it ?
 
-1.  First have a look at the help message !
+First have a look at the help message !
 
-``` {.sourceCode .guess}
+```
 command --help
 usage : command -h
 Use option -h|--help for more information
 ```
-
-(...)
 
 ## Test dataset
