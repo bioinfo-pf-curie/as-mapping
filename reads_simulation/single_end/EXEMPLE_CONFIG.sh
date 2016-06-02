@@ -2,16 +2,21 @@
 # Author(s) : Kenzo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
+#	Config file for reads simulation using ART
 
 ############################## CONFIG FILE ##################################
 
 # ------------ Path(s) for the tools ------------
+
+# 	Path of the required tools
 bedtools=/bioinfo/local/build/BEDTools/BEDTools_2.21.0/bin/bedtools
-art=/bioinfo/users/khillion/Tools/ART/art/art_illumina				# Configuration for ART at the end of this config file
+art=/bioinfo/users/khillion/Tools/ART/art/art_illumina						# Configuration for ART at the end of this config file
 vcf2diploid=/bioinfo/users/khillion/bin/vcf2diploid_v0.2.6a/vcf2diploid.jar
-extract_SNPs=/bioinfo/users/khillion/bin/extract_snps_forNmask.py
 samtools=/bioinfo/local/build/samtools/samtools/bin/samtools
+
+# 	Path of the read simulation scripts
 simreads=/bioinfo/users/khillion/GIT/as-mapping/reads_simulation/single_end/
+extract_SNPs=${simreads}src/extract_snps.py
 
 
 # ------------ INPUT ------------
@@ -22,14 +27,16 @@ id_geno2="129S1_SvImJ"
 
 # 	Fasta of the reference chromosome
 ref="/data/annotations/Mouse/mm10/chromosomes/chrX.fa"
-#	\__	Name of the working chromosome
+#	extract the name of the chromosome
 chr=$(basename ${ref%.fa}) && chr=${chr:3}
 
 # 	VCF files
+#		 vcf_geno1 : Contain SNPs which are different between the genotype 1 and the reference genome
+#		 vcf_geno2 : Contain SNPs which are different between the genotype 2 and the reference genome
+#vcf_geno1="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specific_vcfs_SANGER/CAST_EiJ/CAST_EiJ.mgp.v5.snps.dbSNP142.vcf"
+#vcf_geno2="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specific_vcfs_SANGER/129S1_SvImJ/129S1_SvImJ.mgp.v5.snps.dbSNP142.vcf"
 #		 diff_vcf : Contain SNPs which are different between the two strains (will be generated if left empty)
 #		 full_vcf : Contain SNPs of all different strains of mice
-vcf_geno1="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specific_vcfs_SANGER/CAST_EiJ/CAST_EiJ.mgp.v5.snps.dbSNP142.vcf"
-vcf_geno2="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specific_vcfs_SANGER/129S1_SvImJ/129S1_SvImJ.mgp.v5.snps.dbSNP142.vcf"
 diff_vcf=""
 full_vcf="/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf"
 
@@ -60,7 +67,7 @@ int_bed="intervals_100.bed"
 # ------------ ART parameters ------------
 
 read_length=100
-subs=93	 			# 93 for no substitution, 0 for default rate of substitution (seems to be 0.0074/base) -xx to increase substitution
+subs=93	 			# 93 for no substitution, 0 for default rate of substitution, -xx to increase substitution
 rs=1				# Random seed, it is fixed to 1 to use the same for both generation.
 ir=0				# Insertion rate
 dr=0				# Deletion rate

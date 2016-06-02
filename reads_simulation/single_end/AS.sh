@@ -42,12 +42,12 @@ mkdir -p ${main_out}
 if [[ ! -e ${fasta_outdir}${id_geno1}.fa ]]
 then
 	echo "Generation of the parental chromosome for ${id_geno1} ..."
-	${simreads}chromosome_parental.sh -v ${vcf_geno1} -i ${id_geno1} -c ${config}
+	${simreads}build_parental_reference.sh -v ${vcf_geno1} -i ${id_geno1} -c ${config}
 fi
 if [[ ! -e ${fasta_outdir}${id_geno2}.fa ]]
 then
 	echo "Generation of the parental chromosome for ${id_geno2} ..."
-	${simreads}chromosome_parental.sh -v ${vcf_geno2} -i ${id_geno2} -c ${config}
+	${simreads}build_parental_reference.sh -v ${vcf_geno2} -i ${id_geno2} -c ${config}
 fi
 
 
