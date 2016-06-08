@@ -10,7 +10,7 @@
 ## Python version: 2.7
 ## Script description: Script to annotate the counts from check_variants (clinTools)
 
-scriptVersion = '0.1 - 04-29-2016'
+scriptVersion = '0.1 - 05-24-2016'
 
 """
 This script is used to annotation the counts from check_variants.py (from clinTools)
@@ -199,13 +199,13 @@ if __name__ == "__main__":
 
 	# Test arguments
 	if (snpFile is None):
-        print "INPUT ERROR : VCF file not specified in arguments."
-        usage()
-        sys.exit()
+		print "INPUT ERROR : VCF file not specified in arguments."
+		usage()
+		sys.exit()
 	if (inputFile is None):
-        print "INPUT ERROR : Counts file not specified in arguments."
-        usage()
-        sys.exit()
+		print "INPUT ERROR : Counts file not specified in arguments."
+		usage()
+		sys.exit()
 
 	##################################################################
 	

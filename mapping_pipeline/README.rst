@@ -16,7 +16,7 @@ See NEWS for information about changes in this and previous versions
 What is it ?
 ============
 
-| This pipeline was designed for the mappings of reads prior to allele specific analysis
+| This pipeline was designed for the mappings of reads prior to allele specific analysis. Most of the described methods are present in the present pipeline.
 
 For any question about the pipeline, please contact kenzo.hillion@curie.fr
 
@@ -28,6 +28,7 @@ The following dependancies are required :
 * Bowtie2 (version 2.2.5)
 * vcf2diploid (version 0.2.6a)
 * samtools (version )
+* clinTools (version )
 
 | To install :
 

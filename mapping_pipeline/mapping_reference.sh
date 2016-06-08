@@ -66,11 +66,11 @@ then
 	${bowtie2}bowtie2-build -f ${fasta_out}${id_ref}.fa ${bowtie2_indexes}${id_ref}
 fi
 
-${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x ${bowtie2_indexes}${id_ref} -U $fq_reads -S ${sam_out}${id_ref}".sam"
+${bowtie2}bowtie2 $SCORING_OPT -p 8 -x ${bowtie2_indexes}${id_ref} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_ref}.bam
 
 # Transform to BAM format and delete SAM file
-${samtools} view -bS ${sam_out}${id_ref}.sam > ${sam_out}${id_ref}.bam
-rm ${sam_out}${id_ref}.sam
+#${samtools} view -bS ${sam_out}${id_ref}.sam > ${sam_out}${id_ref}.bam
+#rm ${sam_out}${id_ref}.sam
 
 ##### STEP 2 : BAM analysis ----------------------------------------------------
 
@@ -106,20 +106,21 @@ ${markAllelicStatus} -i ${sam_out}${id_ref}.bam -s ${diff_vcf} -r -o ${sam_out}A
 
 #	Mpileup to counts the bases present at every SNP positions in the read
 mkdir -p ${sam_out}mpileup
-${samtools} sort ${sam_out}${id_ref}.bam ${sam_out}sorted_${id_ref} && ${samtools} index ${sam_out}sorted_${id_ref}.bam
+${samtools} view -h ${sam_out}AllelicStatus/${id_ref}_withAS.bam | grep -v 'XA:i:3' | ${samtools} view -bS - > ${sam_out}non_ambiguous.bam
+${samtools} sort ${sam_out}non_ambiguous.bam ${sam_out}sorted_${id_ref} && ${samtools} index ${sam_out}sorted_${id_ref}.bam
 ${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${id_ref}.bam > ${sam_out}mpileup/${id_ref}.pileup
 echo -e "mapping_reference\t${sam_out}mpileup/${id_ref}.pileup" > ${sam_out}mpileup/CONFIG
 ${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_reference.txt
-${sort_counts} -i ${sam_out}mpileup/counts_mapping_reference.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_reference.txt
+${annotate_counts} -i ${sam_out}mpileup/counts_mapping_reference.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_reference.txt
 # 	Cleaning 
-rm ${sam_out}sorted_${id_ref}.b* ${sam_out}mpileup/${id_ref}.pileup
+rm ${sam_out}sorted_${id_ref}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/${id_ref}.pileup
 
 #	Comparison between generated BAM and mapped reads
 gen_bam=${fq_reads%.fq.gz}.bam
 if [[ -e ${gen_bam} ]]
 then
 	mkdir -p ${sam_out}comptoGen
-	${samtools} sort -n ${sam_out}${id_ref}.bam ${sam_out}nsorted_${id_ref}
+	${samtools} sort -n ${sam_out}AllelicStatus/${id_ref}_withAS.bam ${sam_out}nsorted_${id_ref}
 	${samtools} sort -n ${gen_bam} ${sam_out}nsorted_generated
 	${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_${id_ref}.bam -o ${sam_out}comptoGen/
 	# Cleaning

@@ -65,8 +65,8 @@ fi
 # Updating the location of the bowtie2 indexes
 bowtie2_indexes=$fasta_out$bowtie2_indexes
 
-#${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x $bowtie2_indexes$id_geno1 -U $fq_reads -S ${sam_out}${id_geno1}.sam
-#${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x $bowtie2_indexes$id_geno2 -U $fq_reads -S ${sam_out}${id_geno2}.sam
+${bowtie2}bowtie2 $SCORING_OPT -p 8 -x $bowtie2_indexes$id_geno1 -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno1}.bam
+${bowtie2}bowtie2 $SCORING_OPT -p 8 -x $bowtie2_indexes$id_geno2 -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno2}.bam
 
 # Transform to BAM format and delete SAM file
 #${samtools} view -bS ${sam_out}${id_geno1}.sam > ${sam_out}${id_geno1}.bam && rm ${sam_out}${id_geno1}.sam
@@ -77,10 +77,10 @@ bowtie2_indexes=$fasta_out$bowtie2_indexes
 
 # Select best alignment and mark Allelic status
 #	Sort bam files by names
-#${samtools} sort -n ${sam_out}${id_geno1}.bam ${sam_out}nsorted_${id_geno1}
-#${samtools} sort -n ${sam_out}${id_geno2}.bam ${sam_out}nsorted_${id_geno2}
-#${selectBest} -1 ${sam_out}nsorted_${id_geno1}.bam -2 ${sam_out}nsorted_${id_geno2}.bam -f selected_${id_geno1}_${id_geno2} -o ${sam_out}
-#rm ${sam_out}nsorted_${id_geno1}.bam ${sam_out}nsorted_${id_geno2}.bam
+${samtools} sort -n ${sam_out}${id_geno1}.bam ${sam_out}nsorted_${id_geno1}
+${samtools} sort -n ${sam_out}${id_geno2}.bam ${sam_out}nsorted_${id_geno2}
+${selectBest} -1 ${sam_out}nsorted_${id_geno1}.bam -2 ${sam_out}nsorted_${id_geno2}.bam -f selected_${id_geno1}_${id_geno2} -o ${sam_out}
+rm ${sam_out}nsorted_${id_geno1}.bam ${sam_out}nsorted_${id_geno2}.bam
 
 if [[ -z $diff_vcf ]]
 then # User did not specify a VCF with differential SNPs
@@ -109,14 +109,15 @@ fi
 
 #   Mpileup to counts the bases present at every SNP positions in the read
 mkdir -p ${sam_out}mpileup
-#${samtools} sort ${sam_out}selected_${id_geno1}_${id_geno2}.bam ${sam_out}sorted_${id_geno1}_${id_geno2} && ${samtools} index ${sam_out}sorted_${id_geno1}_${id_geno2}.bam
-#${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${id_geno1}_${id_geno2}.bam > ${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup
+${samtools} view -h ${sam_out}selected_${id_geno1}_${id_geno2}.bam | grep -v 'XA:i:3' | ${samtools} view -bS - > ${sam_out}non_ambiguous.bam
+${samtools} sort ${sam_out}non_ambiguous.bam ${sam_out}sorted_${id_geno1}_${id_geno2} && ${samtools} index ${sam_out}sorted_${id_geno1}_${id_geno2}.bam
+${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${id_geno1}_${id_geno2}.bam > ${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup
 echo -e "mapping_parental\t${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup" > ${sam_out}mpileup/CONFIG
-#${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_parental.txt
-#${sort_counts} -i ${sam_out}mpileup/counts_mapping_parental.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_parental.txt
+${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_parental.txt
+${annotate_counts} -i ${sam_out}mpileup/counts_mapping_parental.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_parental.txt
 
 #   Cleaning 
-#rm ${sam_out}sorted_${id_geno1}_${id_geno2}.b* ${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup
+rm ${sam_out}sorted_${id_geno1}_${id_geno2}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup
 
 #   Comparison between generated BAM and mapped reads
 gen_bam=${fq_reads%.fq.gz}.bam

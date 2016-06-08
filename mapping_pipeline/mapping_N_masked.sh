@@ -94,11 +94,11 @@ fi
 # Updating the location of the bowtie2 indexes
 bowtie2_indexes=$fasta_out$bowtie2_indexes
 
-${bowtie2}bowtie2 $SCORING_OPT -p 8 -N 1 -x $bowtie2_indexes$masked_genome -U $fq_reads -S ${sam_out}${masked_genome}.sam
+${bowtie2}bowtie2 $SCORING_OPT -p 8 -x $bowtie2_indexes$masked_genome -U $fq_reads | ${samtools} view -bS - > ${sam_out}${masked_genome}.bam
 
 # Transform to BAM format and delete SAM file
-${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam
-rm ${sam_out}${masked_genome}.sam
+#${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam
+#rm ${sam_out}${masked_genome}.sam
 
 ##### STEP 3 : BAM analysis -----------------------------------------------------------
 
@@ -108,20 +108,21 @@ ${markAllelicStatus} -i ${sam_out}${masked_genome}.bam -s ${diff_vcf} -r -o ${sa
 
 #   Mpileup to counts the bases present at every SNP positions in the read
 mkdir -p ${sam_out}mpileup
-${samtools} sort ${sam_out}${masked_genome}.bam ${sam_out}sorted_${masked_genome} && ${samtools} index ${sam_out}sorted_${masked_genome}.bam
+${samtools} view -h ${sam_out}AllelicStatus/${masked_genome}_withAS.bam | grep -v 'XA:i:3' | ${samtools} view -bS - > ${sam_out}non_ambiguous.bam
+${samtools} sort ${sam_out}non_ambiguous.bam ${sam_out}sorted_${masked_genome} && ${samtools} index ${sam_out}sorted_${masked_genome}.bam
 ${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${masked_genome}.bam > ${sam_out}mpileup/${masked_genome}.pileup
 echo -e "mapping_N_masked\t${sam_out}mpileup/${masked_genome}.pileup" > ${sam_out}mpileup/CONFIG
 ${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_Nmask.txt
-${sort_counts} -i ${sam_out}mpileup/counts_mapping_Nmask.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_Nmask.txt
+${annotate_counts} -i ${sam_out}mpileup/counts_mapping_Nmask.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_Nmask.txt
 #   Cleaning 
-rm ${sam_out}sorted_${masked_genome}.b* ${sam_out}mpileup/${masked_genome}.pileup
+rm ${sam_out}sorted_${masked_genome}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/${masked_genome}.pileup
 
 #   Comparison between generated BAM and mapped reads
 gen_bam=${fq_reads%.fq.gz}.bam
 if [[ -e ${gen_bam} ]]
 then
     mkdir -p ${sam_out}comptoGen
-    ${samtools} sort -n ${sam_out}${masked_genome}.bam ${sam_out}nsorted_${masked_genome}
+    ${samtools} sort -n ${sam_out}AllelicStatus/${masked_genome}_withAS.bam ${sam_out}nsorted_${masked_genome}
     ${samtools} sort -n ${gen_bam} ${sam_out}nsorted_generated
     ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_${masked_genome}.bam -o ${sam_out}comptoGen/
     # Cleaning

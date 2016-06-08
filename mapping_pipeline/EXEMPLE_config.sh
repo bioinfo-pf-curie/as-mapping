@@ -1,7 +1,12 @@
 #!/bin/bash
 # Author(s) : Kenzo Hillion
 # Contact : kenzo.hillion@curie.fr
-# Comment(s) :
+# Comment(s) : CONFIG file for mapping of reads with different methods :
+#	-1 : Mapping to reference genome
+#	-2 : Mapping to parental genomes (both chromosomes separatly)
+#	-3 : Mapping to diploid genome (both parental chromosomes in the same time)
+#	-4 : Mapping to reference N-masked genome
+#	-5 : Mapping to both parental N-masked genomes
 
 ############################## CONFIG FILE ##################################
 
@@ -20,7 +25,7 @@ extract_SNPs=${map_path}src/extract_snps.py
 genomeMask=${map_path}src/genomeMask.sh
 parental_genomes=${map_path}src/parental_genomes.sh
 diploid_genome=${map_path}src/diploid_genome.sh
-sort_counts=${map_path}src/sort_counts.py
+annotate_counts=${map_path}src/annotate_counts.py
 compMaptoGen=${map_path}src/compMaptoGen.py
 
  
@@ -30,18 +35,18 @@ compMaptoGen=${map_path}src/compMaptoGen.py
 fq_reads="READS_PATH"
 ref_geno="/data/annotations/Mouse/mm10/complete/mm10.fa"
 
-# -- Required for Mapping 3 to 6
+# -- Required for Mapping 2 to 5
 # 	You can specify "ref" for the first genome
 id_geno1="CAST_EiJ"
 id_geno2="129S1_SvImJ"
 
-# -- Required for Mapping 3,4 and 6
+# -- Required for Mapping 2,3 and 5
 #	VCF containing strain specific SNPs
 #	Can be downloaded at for v5 : ftp://ftp-mouse.sanger.ac.uk/REL-1505-SNPs_Indels/strain_specific_vcfs/
 vcf_geno1="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specific_vcfs_SANGER/CAST_EiJ/CAST_EiJ.mgp.v5.snps.dbSNP142.vcf"
 vcf_geno2="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specific_vcfs_SANGER/129S1_SvImJ/129S1_SvImJ.mgp.v5.snps.dbSNP142.vcf"
 
-# -- Required for Mapping 5 and 6
+# -- Required for Mapping 4 and 5
 #	Directory containing every chromosomes of the reference genome at the fasta format
 ref_dir="/data/annotations/Mouse/mm10/chromosomes_clean/"
 #	Specify at least one

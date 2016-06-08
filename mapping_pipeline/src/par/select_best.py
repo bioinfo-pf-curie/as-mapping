@@ -101,9 +101,9 @@ if __name__ == "__main__":
 
 	# Test arguments
 	if ((par1 is None) | (par2 is None)):
-        print "INPUT ERROR : BAM file(s) not specified in arguments."
-        usage()
-        sys.exit()
+		print "INPUT ERROR : BAM file(s) not specified in arguments."
+		usage()
+		sys.exit()
 
 	##################################################################
 
@@ -116,7 +116,6 @@ if __name__ == "__main__":
 
 	# Set up counters and name of the tag
 	counter_read = 0
-	dict_counter = {}
 	tag = "XA"
 
 	# Comparing read one by one
@@ -133,7 +132,7 @@ if __name__ == "__main__":
 			as_p2=readp2.get_tag("AS")
 	
 		if ((as_p1 == -1000) & (as_p2 == -1000)):	# If read is unmapped in both parent, set the flag to ambigous and write the first read
-			readp1.set_tag(tag,3)
+			readp1.set_tag(tag,0)
 			bamout.write(readp1)
 			continue
 

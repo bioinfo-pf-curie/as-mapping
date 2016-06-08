@@ -142,7 +142,7 @@ do
 	echo -e "${masked_genome}\t${sam_out}mpileup/${masked_genome}.pileup" >> ${sam_out}mpileup/CONFIG
 done
 ${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_parentalNmask.txt
-${sort_counts} -i ${sam_out}mpileup/counts_mapping_parentalNmask.txt -s ${diff_vcf} > ${sam_out}mpileup/counts_parentalNmask.txt
+${annotate_counts} -i ${sam_out}mpileup/counts_mapping_parentalNmask.txt -s ${diff_vcf} > ${sam_out}mpileup/counts_parentalNmask.txt
 
 #	Split both counts for each genotype
 for masked_genome in ${geno1_masked_genome} ${geno2_masked_genome}
