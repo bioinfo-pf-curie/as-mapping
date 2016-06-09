@@ -41,33 +41,48 @@ make CONFIG_SYS=config-install.txt install
 
 **A CONFIG file** containing:
 
-* The different path of the tools
+* The different path of the tools :
 
-```bash
-bedtools=path_to_bedtools
-art=path_to_art
-vcf2diploid=path_to_vcf2diploid.jar
-samtools=path_to_samtools
-simreads=directory_path
-```
+**VARIABLE NAME** | **CONTENT**
+----------------- | -----------
+bedtools          | path to bedtools
+art               | path to ART
+vcf2diploid       | path to vcf2diploid.jar
+samtools          | path to samtools
+simreads          | path of the current directory
 
-Variable Name   | Content
---------------- | -------
-**bedtools**    | path to bedtools
-**art**         | path to ART
-**vcf2diploid** | path to vcf2diploid.jar
-**samtools**    | path to samtools
-**simreads**    | path of the current directory
+* Information about the two genotypes (as the appear in the VCF file) :
 
+**VARIABLE NAME** | **CONTENT**
+----------------- | -----------
+id\_geno1         | name of the first genotype
+id\_geno2         | name of the second genotype
+
+* INPUT files :
+
+**VARIABLE NAME** | **CONTENT**
+----------------- | -----------
+ref               | path to your reference genome (.fa)
+full\_vcf         | path to the VCF file (.vcf). For mouse, VCF files are downloaded [here](ftp://ftp-mouse.sanger.ac.uk/)
+mappa             | [OPTIONAL] mappability tracks (.bed). Mappability tracks can be generated using [GEMTOOLS](https://github.com/gemtools/gemtools)
+
+* ART parameters (refer to art\_illumina\_README for more informations) :
+
+**PARAMETER** | **DESCRIPTION**
+------------- | ---------------
+read\_length  | Length of the simulated reads
+subs          | Correspond to the qs parameter of ART (default : 0). Influence base quality of the reads, thus substitution rate too.
+rs            | Seed for random number generation
+ir            | Insertion rate (default: 0.00009)
+dr            | Deletion rate (default: 0.00011)i
+sequencer     | Sequencing system of the built-in profile used for simulation
+
+* OUTPUT files and directories : By default names are given but can be changed by the user
 
 ## How to use it ?
 
-First have a look at the help message !
+The pipeline is divided in 4 scripts allowing a modularity for the way the user wants to simulate reads.
 
-```
-command --help
-usage : command -h
-Use option -h|--help for more information
-```
+The `biallelic_exemple.sh` script is provided as an exemple pour biallelic simulation from two strains.
 
 ## Test dataset
