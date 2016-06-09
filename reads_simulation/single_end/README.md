@@ -51,11 +51,13 @@ samtools=path_to_samtools
 simreads=directory_path
 ```
 
-| NAME |   |
-| ---- | - | 
-| **bedtools** | path_to_bedtools |
-| **art**      | path_to_art      |
-
+Variable Name   | Content
+--------------- | -------
+**bedtools**    | path to bedtools
+**art**         | path to ART
+**vcf2diploid** | path to vcf2diploid.jar
+**samtools**    | path to samtools
+**simreads**    | path of the current directory
 
 
 ## How to use it ?
