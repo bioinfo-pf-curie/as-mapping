@@ -50,6 +50,7 @@ vcf2diploid=path_to_vcf2diploid.jar
 samtools=path_to_samtools
 simreads=directory_path
 ```
+
 | NAME |   |
 | ---- | - | 
 | **bedtools** | path_to_bedtools |
