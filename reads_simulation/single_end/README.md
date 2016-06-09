@@ -1,4 +1,4 @@
-# Quick Start Guide for single-end reads Simulation
+# Single-end Reads Simulation pipeline
 
 This page is a quick start guide, please read the full [online manual](link) for more information.
 
@@ -6,10 +6,14 @@ See NEWS for information about changes in this and previous versions.
 
 ## What is it ?
 
-This pipeline was designed for the simulation of single-end reads.
+This pipeline was designed for the simulation of single-end reads of a heterozygous individual.
+
+## Contact
 
 For any question about the pipeline, please contact
 <kenzo.hillion@curie.fr>
+
+# Quick Start Guide
 
 ## How to install it ?
 
@@ -41,12 +45,17 @@ make CONFIG_SYS=config-install.txt install
 
 ```bash
 bedtools=path_to_bedtools
-art=path_to_desired_art
+art=path_to_art
 vcf2diploid=path_to_vcf2diploid.jar
 samtools=path_to_samtools
-extract_SNPs=path_to_extract_snps_forNmask.py
 simreads=directory_path
 ```
+| NAME |   |
+| ---- | - | 
+| **bedtools** | path_to_bedtools |
+| **art**      | path_to_art      |
+
+
 
 ## How to use it ?
 
