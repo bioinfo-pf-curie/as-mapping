@@ -32,14 +32,9 @@ cd pip-master
 make CONFIG_SYS=config-install.txt install
 ```
 
-| SYSTEM CONFIGURATION |
-| -------------------- |
-|PREFIX | Path to installation folder |
+## CONFIG File
 
-
-## Input Files
-
-**A CONFIG file** containing:
+The `CONFIG.sh` file contains all the informations and paths for a simulation.
 
 * The different path of the tools :
 
@@ -66,7 +61,7 @@ ref               | path to your reference genome (.fa)
 full\_vcf         | path to the VCF file (.vcf). For mouse, VCF files are downloaded [here](ftp://ftp-mouse.sanger.ac.uk/)
 mappa             | [OPTIONAL] mappability tracks (.bed). Mappability tracks can be generated using [GEMTOOLS](https://github.com/gemtools/gemtools)
 
-* ART parameters (refer to art\_illumina\_README for more informations) :
+* ART parameters (refer to `art\_illumina\_README` for more informations) :
 
 **PARAMETER** | **DESCRIPTION**
 ------------- | ---------------
@@ -74,7 +69,7 @@ read\_length  | Length of the simulated reads
 subs          | Correspond to the qs parameter of ART (default : 0). Influence base quality of the reads, thus substitution rate too.
 rs            | Seed for random number generation
 ir            | Insertion rate (default: 0.00009)
-dr            | Deletion rate (default: 0.00011)i
+dr            | Deletion rate (default: 0.00011)
 sequencer     | Sequencing system of the built-in profile used for simulation
 
 * OUTPUT files and directories : By default names are given but can be changed by the user
@@ -83,6 +78,6 @@ sequencer     | Sequencing system of the built-in profile used for simulation
 
 The pipeline is divided in 4 scripts allowing a modularity for the way the user wants to simulate reads.
 
-The `biallelic_exemple.sh` script is provided as an exemple pour biallelic simulation from two strains.
+The `biallelic_exemple.sh` script is provided as an exemple for biallelic simulation from two strains.
 
 ## Test dataset
