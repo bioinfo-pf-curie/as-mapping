@@ -61,7 +61,7 @@ ref               | path to your reference genome (.fa)
 full\_vcf         | path to the VCF file (.vcf). For mouse, VCF files are downloaded [here](ftp://ftp-mouse.sanger.ac.uk/)
 mappa             | [OPTIONAL] mappability tracks (.bed). Mappability tracks can be generated using [GEMTOOLS](https://github.com/gemtools/gemtools)
 
-* ART parameters (refer to `art\_illumina\_README` for more informations) :
+* ART parameters (refer to `art_illumina_README` for more informations) :
 
 **PARAMETER** | **DESCRIPTION**
 ------------- | ---------------
