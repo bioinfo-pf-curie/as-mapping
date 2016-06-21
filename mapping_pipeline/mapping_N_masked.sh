@@ -124,7 +124,7 @@ then
     mkdir -p ${sam_out}comptoGen
     ${samtools} sort -n ${sam_out}AllelicStatus/${masked_genome}_withAS.bam ${sam_out}nsorted_${masked_genome}
     ${samtools} sort -n ${gen_bam} ${sam_out}nsorted_generated
-    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_${masked_genome}.bam -o ${sam_out}comptoGen/
+    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_${masked_genome}.bam -o ${sam_out}comptoGen/ -u
     # Cleaning
     rm ${sam_out}nsorted_${masked_genome}.bam ${sam_out}nsorted_generated.bam
 fi

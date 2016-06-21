@@ -126,7 +126,7 @@ then
     mkdir -p ${sam_out}comptoGen
     ${samtools} sort -n ${sam_out}selected_${id_geno1}_${id_geno2}.bam ${sam_out}nsorted_selected
     ${samtools} sort -n ${gen_bam} ${sam_out}nsorted_generated
-    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_selected.bam -o ${sam_out}comptoGen/
+    ${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_selected.bam -o ${sam_out}comptoGen/ -u
     # Cleaning
     rm ${sam_out}nsorted_selected.bam ${sam_out}nsorted_generated.bam
 fi
