@@ -10,7 +10,7 @@
 #### Parameters #### --------------------------------------------------------------------------------------------------------------
 
 # -- Local scripts for BAM analysis
-selectBest=${map_path}src/par/select_best.py
+selectBest=${map_path}scripts/par/select_best.py
 
 while [ $# -gt 0 ] 
 do

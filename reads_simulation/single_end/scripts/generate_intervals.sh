@@ -62,11 +62,9 @@ fi
 # BED file generation
 echo -e "  |\t$(basename $0) : Generating intervals BED file ..."
 # Select non intergenic variants
-vcf_chr=chr_spec_$RANDOM.tmp
-# Select SNPs from the desired chromosome
-awk -v chr=$chr '{if ($1 ~ /^#/) print; else if ($1 == chr) {print}}' OFS='\t' ${diff_vcf} > $vcf_chr
-# Awk to create intervals of 2*$read_length around every SNPs of the VCF from the chromosome
-awk -v i=$inter_size '{if ($1 !~ /^#/) print "chr"$1,$2-i,$2+(i-1),$3":"$4"/"$5}' OFS='\t' $vcf_chr > $tmp_bed 
+
+# Awk to create intervals of 2*$read_length around every SNPs of the VCF on the desired chromosome
+awk -v chrom=$chr i=$inter_size '{if ($1 ~ /^#/) print; else if ($1 == chrom) {print "chr"$1,$2-i,$2+(i-1),$3":"$4"/"$5}}' OFS='\t' ${diff_vcf} > $tmp_bed
 
 # Selection of intervals on mappability if bed specified by user
 if [[ -e ${mappa} ]]

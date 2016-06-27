@@ -29,7 +29,7 @@ fi
 source ${config}
 
 # -- Local scripts for BAM analysis
-selectBest=${map_path}src/par/select_best.py
+selectBest=${map_path}scripts/par/select_best.py
 
 #### Function #### ----------------------------------------------------------------------------------------------------------------
 
@@ -65,8 +65,8 @@ fi
 # Updating the location of the bowtie2 indexes
 bowtie2_indexes=$fasta_out$bowtie2_indexes
 
-${bowtie2}bowtie2 $SCORING_OPT -p 8 -x $bowtie2_indexes$id_geno1 -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno1}.bam
-${bowtie2}bowtie2 $SCORING_OPT -p 8 -x $bowtie2_indexes$id_geno2 -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno2}.bam
+${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x $bowtie2_indexes$id_geno1 -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno1}.bam
+${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x $bowtie2_indexes$id_geno2 -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno2}.bam
 
 # Transform to BAM format and delete SAM file
 #${samtools} view -bS ${sam_out}${id_geno1}.sam > ${sam_out}${id_geno1}.bam && rm ${sam_out}${id_geno1}.sam

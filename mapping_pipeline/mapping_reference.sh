@@ -29,7 +29,7 @@ fi
 source ${config}
 
 # -- Local scripts for BAM analysis
-markAllelicStatus=${map_path}src/ref/markAllelicStatus.py
+markAllelicStatus=${map_path}scripts/ref/markAllelicStatus.py
 
 #### Function #### ----------------------------------------------------------------------------------------------------------------
 
@@ -66,7 +66,7 @@ then
 	${bowtie2}bowtie2-build -f ${fasta_out}${id_ref}.fa ${bowtie2_indexes}${id_ref}
 fi
 
-${bowtie2}bowtie2 $SCORING_OPT -p 8 -x ${bowtie2_indexes}${id_ref} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_ref}.bam
+${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x ${bowtie2_indexes}${id_ref} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_ref}.bam
 
 # Transform to BAM format and delete SAM file
 #${samtools} view -bS ${sam_out}${id_ref}.sam > ${sam_out}${id_ref}.bam

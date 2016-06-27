@@ -63,7 +63,7 @@ sequencer="HS20"	# The name of Illumina sequencing system :
 main_out="data/"
 vcf_outdir=${main_out}"vcfs/"
 fasta_outdir=${main_out}"fastas/"
-bed_outdir=${main_out}"beds/"
+tmp_outdir=${main_out}"tmp/"
 
 #		Directory where the generated reads will be stored
 art_outdir="simulated_reads/"

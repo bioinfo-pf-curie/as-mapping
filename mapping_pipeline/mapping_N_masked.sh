@@ -29,7 +29,7 @@ fi
 source ${config}
 
 # -- Local scripts for BAM analysis
-markAllelicStatus=${map_path}src/Nmask/markAllelicStatus.py
+markAllelicStatus=${map_path}scripts/Nmask/markAllelicStatus.py
 
 #### Function #### ----------------------------------------------------------------------------------------------------------------
 
@@ -94,7 +94,7 @@ fi
 # Updating the location of the bowtie2 indexes
 bowtie2_indexes=$fasta_out$bowtie2_indexes
 
-${bowtie2}bowtie2 $SCORING_OPT -p 8 -x $bowtie2_indexes$masked_genome -U $fq_reads | ${samtools} view -bS - > ${sam_out}${masked_genome}.bam
+${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x $bowtie2_indexes$masked_genome -U $fq_reads | ${samtools} view -bS - > ${sam_out}${masked_genome}.bam
 
 # Transform to BAM format and delete SAM file
 #${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam

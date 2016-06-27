@@ -21,12 +21,12 @@ checkVariants=/bioinfo/users/khillion/bin/clinTools/check_variants.py
 # Local scripts
 #	path to the directory with the different scripts
 map_path="/bioinfo/users/khillion/GIT/as-mapping/mapping_pipeline/"
-extract_SNPs=${map_path}src/extract_snps.py
-genomeMask=${map_path}src/genomeMask.sh
-parental_genomes=${map_path}src/parental_genomes.sh
-diploid_genome=${map_path}src/diploid_genome.sh
-annotate_counts=${map_path}src/annotate_counts.py
-compMaptoGen=${map_path}src/compMaptoGen.py
+extract_SNPs=${map_path}scripts/extract_snps.py
+genomeMask=${map_path}scripts/genomeMask.sh
+parental_genomes=${map_path}scripts/parental_genomes.sh
+diploid_genome=${map_path}scripts/diploid_genome.sh
+annotate_counts=${map_path}scripts/annotate_counts.py
+compMaptoGen=${map_path}scripts/compMaptoGen.py
 
  
 # ------------ Input(s) ------------
