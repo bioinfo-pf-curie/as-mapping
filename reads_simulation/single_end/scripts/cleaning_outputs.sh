@@ -58,4 +58,4 @@ cat ${art_outdir}*.fq | gzip > ${art_outdir}${id_geno1}_${id_geno2}.fq.gz
 
 # Removing temporary files and unused files
 echo -e "  |\t$(basename $0) : Cleaning files ..."
-rm ${art_outdir}*.tmp ${art_outdir}*.aln ${art_outdir}*.fq
+rm ${art_outdir}*.tmp ${art_outdir}*.aln ${art_outdir}*.fq ${art_outdir}*.sam

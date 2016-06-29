@@ -39,6 +39,13 @@ full_vcf="/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.
 #	available at : https://github.com/gemtools/gemtools
 mappa="/data/annotations/Mouse/mappability/mm10/100bp/mm10_100.bed"
 
+#	[OPTIONAL] BED file for allele ratio of genotype 1
+#	BED5 file with the following field
+#	Exemple :
+#	CHR	begin	end	name	ratio_geno1
+#	chrX	103460372	103483233	Xist	1
+ASratio=""
+
 
 # ------------ ART parameters ------------
 
@@ -67,6 +74,3 @@ tmp_outdir=${main_out}"tmp/"
 
 #		Directory where the generated reads will be stored
 art_outdir="simulated_reads/"
-
-# 	BED file of selected intervals for read generation (which is reused in case of several simulation)
-int_bed="intervals_"${read_length}".bed"

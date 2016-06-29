@@ -22,13 +22,10 @@ done
 
 if [[ -z $config ]]
 then
-    echo "ERROR : you need to specify a config file. Exit."
+    echo -e "  |\t$(basename $0) : ERROR : you need to specify a config file. Exit."
     exit
 fi
 source ${config}
-
-# temporary files
-tmp_int=$RANDOM.inttmp
 
 #### Function #### ----------------------------------------------------------------------------------------------------------------
 
@@ -47,20 +44,20 @@ function usage {
 #### Main #### --------------------------------------------------------------------------------------------------------------------
 
 
-mkdir -p ${art_outdir}
+mkdir -p ${art_outdir} ${fasta_outdir}tmp/
 
 # Generation of the different fragments in fasta around the SNPs
 fasta=chr${chr}_$id_geno".fa"
-int_fa=${id_geno}_$(basename $bed)
-int_fa=${int_fa%.bed}.fa
+int_fa=${fasta_outdir}tmp/${RANDOM}.fa
+tmp_int=${fasta_outdir}tmp/$RANDOM.inttmp
 
-if [[ ! -e ${fasta_outdir}${int_fa} ]]
-then
-	echo -e "  |\t$(basename $0) : Getting fasta from interval bed file ..."
-	${bedtools} getfasta -fi ${fasta_outdir}${fasta} -bed ${bed} -fo ${fasta_outdir}${int_fa}
-	awk -v id=${id_geno} '{if ($1 ~ /^>/) print $1"_"id; else print}' ${fasta_outdir}${int_fa} > ${fasta_outdir}${tmp_int} && mv ${fasta_outdir}${tmp_int} ${fasta_outdir}${int_fa}
-fi
+echo -e "  |\t$(basename $0) : Getting fasta from interval bed file ..."
+${bedtools} getfasta -fi ${fasta_outdir}${fasta} -bed ${bed} -fo ${int_fa}
+awk -v id=${id_geno} '{if ($1 ~ /^>/) print $1"_"id; else print}' ${int_fa} > ${tmp_int} && mv ${tmp_int} ${int_fa}
 
 # Simulation of reads with ART
 echo -e "  |\t$(basename $0) : Generation of reads with ART ..."
-${art} -i ${fasta_outdir}${int_fa} -o ${art_outdir}${int_fa%.fa} -l ${read_length} -c ${reads_number} -ss ${sequencer} -rs ${rs} -ir ${ir} -dr ${dr} -qs ${subs} -sam
+echo "$int_fa et ${art_outdir}${int_fa%.fa} et ${read_length} et ${reads_number%.*}"
+${art} -i ${int_fa} -o ${art_outdir}$(basename ${int_fa%.fa}) -l ${read_length} -c ${reads_number%.*} -ss ${sequencer} -rs ${rs} -ir ${ir} -dr ${dr} -qs ${subs} -sam
+
+rm ${int_fa}

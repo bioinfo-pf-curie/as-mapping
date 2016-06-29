@@ -52,22 +52,14 @@ then
 fi
 
 
-#### STEP 2 : Generate intervals in BED format (non intergenic region and mappabality == 1 on reference genome)
-if [[ ! -e ${bed_outdir}${chr}_${int_bed} ]]
-then
-	echo "Generation of the intervals in BED format ..."
-	mkdir -p ${bed_outdir}
-	${simreads}scripts/generate_intervals.sh -c ${config}
-fi
+#### STEP 2 : Generate intervals and reads
+
+echo "Generation of the intervals in BED format ..."
+mkdir -p ${bed_outdir}
+${simreads}scripts/generate_intervals.sh -c ${config}
 
 
-#### STEP 3 : Generate a chosen number of reads on each interval for the two strains
-echo "Generation of reads with ART ..."
-${simreads}scripts/generate_reads.sh -i ${id_geno1} -b ${bed_outdir}${chr}_${int_bed} -n ${number_reads} -c ${config}
-${simreads}scripts/generate_reads.sh -i ${id_geno2} -b ${bed_outdir}${chr}_${int_bed} -n ${number_reads} -c ${config}
-
-
-#### STEP 4 : Cleaning of the different outputs (rephasing, removing unused files, merging .fq and .sam)
+#### STEP 3 : Cleaning of the different outputs (rephasing, removing unused files, merging .fq and .sam)
 echo "Merging and Cleaning files ..."
 ${simreads}scripts/cleaning_outputs.sh -c ${config}
 
