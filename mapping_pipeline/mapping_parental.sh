@@ -47,16 +47,16 @@ start=`date +%s`
 
 # Set up output directory for this method of mapping in the main output directory
 sam_out=$sam_out"mapping_parental/"
-mkdir -p $sam_out
+mkdir -p $sam_out $main_out
 
 
 ##### STEP 1 : Generation of parental genomes ------------------------------------------------
 #	Following this script, both parental genomes are generated in the $fasta_out directory
-#	with the named specified in $fasta_geno1 and $fasta_geno2
+#	In parallel, N-masked genome is also generated
 
-if [[ ! -e $fasta_out$fasta_geno1 && ! -e $fasta_out$fasta_geno2 ]]
+if [[ ! -e ${fasta_out}${id_geno1}.fa && ! -e ${fasta_out}${id_geno2}.fa ]]
 then # Create parental genomes and indexes (generation of indexes within the script)
-	${parental_genomes} -c ${config}
+	${SNPsplit_genomes} -c ${config}
 fi
 
 
@@ -67,10 +67,6 @@ bowtie2_indexes=$fasta_out$bowtie2_indexes
 
 ${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x $bowtie2_indexes$id_geno1 -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno1}.bam
 ${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x $bowtie2_indexes$id_geno2 -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno2}.bam
-
-# Transform to BAM format and delete SAM file
-#${samtools} view -bS ${sam_out}${id_geno1}.sam > ${sam_out}${id_geno1}.bam && rm ${sam_out}${id_geno1}.sam
-#${samtools} view -bS ${sam_out}${id_geno2}.sam > ${sam_out}${id_geno2}.bam && rm ${sam_out}${id_geno2}.sam
 
 
 ##### STEP 3 : Comparison to find best alignment and BAM analysis  ---------------------------

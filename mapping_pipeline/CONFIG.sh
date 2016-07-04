@@ -15,15 +15,17 @@
 
 # Required installed tools
 bowtie2=/bioinfo/local/build/bowtie2/bowtie2-2.2.5/
-vcf2diploid=/bioinfo/users/khillion/bin/vcf2diploid_v0.2.6a/vcf2diploid.jar
+vcf2diploid=/bioinfo/users/khillion/bin/vcf2diploid_v0.2.6a/vcf2diploid.jar # Obsolete with SNPsplit
 samtools=/bioinfo/local/build/samtools/samtools/bin/samtools
 checkVariants=/bioinfo/users/khillion/bin/clinTools/check_variants.py
+SNPsplit_gen=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
 # Local scripts
 #	path to the directory with the different scripts
 map_path="/bioinfo/users/khillion/GIT/as-mapping/mapping_pipeline/"
 extract_SNPs=${map_path}scripts/extract_snps.py
-genomeMask=${map_path}scripts/genomeMask.sh
-parental_genomes=${map_path}scripts/parental_genomes.sh
+genomeMask=${map_path}scripts/genomeMask.sh             # Obsolete with SNPsplit
+parental_genomes=${map_path}scripts/parental_genomes.sh # Obsolete with SNPsplit
+SNPsplit_genomes=${map_path}scripts/SNPsplit_genomes.sh
 diploid_genome=${map_path}scripts/diploid_genome.sh
 annotate_counts=${map_path}scripts/annotate_counts.py
 compMaptoGen=${map_path}scripts/compMaptoGen.py
@@ -49,11 +51,11 @@ vcf_geno2="/data/annotations/Mouse/variant_informations/mgpV5_mm10/strain_specif
 # -- Required for Mapping 4 and 5
 #	Directory containing every chromosomes of the reference genome at the fasta format
 ref_dir="/data/annotations/Mouse/mm10/chromosomes_clean/"
-#	Specify at least one
-#       full_vcf : vcf file containing all SNPs from either the two strains, or vcf file from Sanger directly (all SNPs of all strains, takes more time to extract information)
-#       diff_vcf : vcf file containing all differential SNps between the two strains
+
+#       full_vcf : vcf file containing all SNPs from either the two strains, 
+#		or vcf file from Sanger directly (all SNPs of all strains, takes more time to extract information)
 full_vcf="/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf"
-diff_vcf="/bioinfo/users/khillion/AS_proj/mapping_pipeline/data/vcfs/mgp.v5.merged.snps_all.dbSNP142_CAST_EiJ_129S1_SvImJ.vcf"
+#diff_vcf="/bioinfo/users/khillion/AS_proj/mapping_pipeline/data/vcfs/mgp.v5.merged.snps_all.dbSNP142_CAST_EiJ_129S1_SvImJ.vcf"
 diff_bed="/bioinfo/users/khillion/AS_proj/mapping_pipeline/data/vcfs/mgp.v5.merged.snps_all.dbSNP142_CAST_EiJ_129S1_SvImJ.bed"
 
 
@@ -76,11 +78,11 @@ sam_out="MAPPED_OUTDIR"
 # -- Files (Do not leave empty)
 
 #	Names of VCF files containing only homozygous SNPs of a strain
-homo_vcf1="homo_"$(echo $vcf_geno1 | tr '/' '\n' | tail -1)
-homo_vcf2="homo_"$(echo $vcf_geno2 | tr '/' '\n' | tail -1)
+#homo_vcf1="homo_"$(echo $vcf_geno1 | tr '/' '\n' | tail -1)
+#homo_vcf2="homo_"$(echo $vcf_geno2 | tr '/' '\n' | tail -1)
 #	Names of fasta files of parental genomes
-fasta_geno1=$id_geno1".fa"
-fasta_geno2=$id_geno2".fa"
+#fasta_geno1=$id_geno1".fa"
+#fasta_geno2=$id_geno2".fa"
 
 
 # ------------ Bowtie2 Options ------------

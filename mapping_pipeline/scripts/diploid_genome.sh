@@ -42,7 +42,7 @@ mkdir -p $fasta_out $fasta_out$bowtie2_indexes
 # Generation of parental genomes
 if [[ ! -e $fasta_out$fasta_geno1 && ! -e $fasta_out$fasta_geno2 ]]
 then # Create parental genomes and indexes (generation of indexes within the script)
-    ${parental_genomes} -c ${config}
+    ${SNPsplit_genomes} -c ${config}
 fi
 
 # Renaming chromosomes to correspond to its origin and concatenate to form the diploid genome

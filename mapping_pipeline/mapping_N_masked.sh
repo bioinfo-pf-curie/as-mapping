@@ -52,40 +52,13 @@ mkdir -p $sam_out
 ##### STEP 1 : Generation of N-masked genome ----------------------------------------------------
 
 #       Following this script, N-masked genome is generated based on differential SNPs between 
-#       the two strains specified by $id_geno1 and $îd_geno2
+#       the two strains specified by $id_geno1 and $id_geno2
+#		In parallel, parental genomes are also generated
 
-if [[ -z $diff_vcf ]]
-then # User did not specify a VCF with differential SNPs
-	mkdir -p ${vcf_out}
-	vcf=$(basename $full_vcf)
-	diff_vcf=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".vcf"
-	if [[ ! -e $diff_vcf ]]
-	then # Need to generate the VCF with the differential SNPs
-		echo "Generating VCF file of different SNPs between $id_geno1 and $id_geno2 ..."
-       	$extract_SNPs -i $full_vcf -r $id_geno1 -a $id_geno2 -f 1 > $diff_vcf
-		end_vcf_gen=`date +%s`
-		echo "VCF file generated in "$((end_vcf_gen-start))" seconds."
-	fi
-fi
-
-masked_genome="N_masked_"$id_geno1"_"$id_geno2
+masked_genome="N-masked_"$id_geno1"_"$id_geno2
 if [[ ! -e $fasta_out$masked_genome.fa ]]
 then # Need to generate the masked genome
-	# Transform VCF in bed file
-	if [[ -z $diff_bed ]]
-    then # User did not specify a BED with differential SNPs
-        diff_bed=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".bed"
-        if [[ ! -e $diff_bed ]]
-        then # Need to generate the BED with the differential SNPs from VCF
-            echo "Generating BED file of different SNPs between $id_geno1 and $id_geno2 from VCF file ..."
-            awk '{if($1 !~ /^#/) print "chr"$1,$2-1,$2,$3":"$4"/"$5}' OFS='\t' $diff_vcf > $diff_bed
-            end_bed_gen=`date +%s`
-            echo "BED file generated in "$((end_bed_gen-start))" seconds."
-        fi  
-    fi
-    $genomeMask -r $masked_genome -f $ref_dir -v ${diff_bed} -o $fasta_out
-	end_genomeMask=`date +%s`
-	echo "Masked genome generated in "$((end_genomeMask-start))" seconds."
+	${SNPsplit_genomes} -c ${config}
 fi
 
 
@@ -94,13 +67,35 @@ fi
 # Updating the location of the bowtie2 indexes
 bowtie2_indexes=$fasta_out$bowtie2_indexes
 
-${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x $bowtie2_indexes$masked_genome -U $fq_reads | ${samtools} view -bS - > ${sam_out}${masked_genome}.bam
+$bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x $bowtie2_indexes$masked_genome -U $fq_reads | ${samtools} view -bS - > ${sam_out}${masked_genome}.bam
 
-# Transform to BAM format and delete SAM file
-#${samtools} view -bS ${sam_out}${masked_genome}.sam > ${sam_out}${masked_genome}.bam
-#rm ${sam_out}${masked_genome}.sam
 
 ##### STEP 3 : BAM analysis -----------------------------------------------------------
+
+if [[ -z $diff_vcf ]]
+then # User did not specify a VCF with differential SNPs
+    mkdir -p ${vcf_out}
+    vcf=$(basename $full_vcf)
+    diff_vcf=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".vcf"
+    if [[ ! -e $diff_vcf ]]
+    then # Need to generate the VCF with the differential SNPs
+        echo "Generating VCF file of different SNPs between $id_geno1 and $id_geno2 ..."
+        $extract_SNPs -i $full_vcf -r $id_geno1 -a $id_geno2 -f 1 > $diff_vcf
+        end_vcf_gen=`date +%s`
+        echo "VCF file generated in "$((end_vcf_gen-start))" seconds."
+    fi  
+    if [[ -z $diff_bed ]]
+    then # User did not specify a BED with differential SNPs
+        diff_bed=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".bed"
+        if [[ ! -e $diff_bed ]]
+        then # Need to generate the BED with the differential SNPs from VCF
+            echo "Generating BED file of different SNPs between $id_geno1 and $id_geno2 from VCF file ..."
+            awk '{if($1 !~ /^#/) print "chr"$1,$2-1,$2,$3":"$4"/"$5}' OFS='\t' $diff_vcf > $diff_bed
+            end_bed_gen=`date +%s`
+            echo "BED file generated in "$((end_bed_gen-start))" seconds."
+        fi
+    fi  
+fi
 
 # Script to add a flag with the allelic status for each read 
 mkdir -p ${sam_out}AllelicStatus
