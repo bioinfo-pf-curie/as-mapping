@@ -11,8 +11,8 @@
 # 	Path of the required tools
 bedtools=/bioinfo/local/build/BEDTools/BEDTools_2.21.0/bin/bedtools
 art=/bioinfo/users/khillion/Tools/ART/art/art_illumina
-vcf2diploid=/bioinfo/users/khillion/bin/vcf2diploid_v0.2.6a/vcf2diploid.jar
 samtools=/bioinfo/local/build/samtools/samtools/bin/samtools
+SNPsplit_gen=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
 
 # 	Path of the read simulation scripts
 simreads=/bioinfo/users/khillion/GIT/as-mapping/reads_simulation/single_end/
@@ -25,10 +25,11 @@ extract_SNPs=${simreads}scripts/extract_snps.py
 id_geno1="CAST_EiJ"
 id_geno2="129S1_SvImJ"
 
-# 	Fasta of the reference chromosome
-ref="/data/annotations/Mouse/mm10/chromosomes/chrX.fa"
-#	extract the name of the chromosome
-chr=$(basename ${ref%.fa}) && chr=${chr:3}
+#   BED file with the desired region for generation
+regions="REGIONS_SELECTED.bed"
+
+#   Directory containing every chromosomes of the reference genome at the fasta format (no "chr")
+ref_dir="/bioinfo/users/khillion/data/genomes/mm10/chromosomes/"
 
 # 	VCF files
 #		 full_vcf : Contain SNPs of all different strains of mice
@@ -50,7 +51,7 @@ ASratio=""
 # ------------ ART parameters ------------
 
 read_length=100
-subs=93	 			# 93 for no substitution, 0 for default rate of substitution, -xx to increase substitution
+subs=0	 			# 93 for no substitution, 0 for default rate of substitution, -xx to increase substitution
 rs=1				# Random seed, it is fixed to 1 to use the same for both generation.
 ir=0				# Insertion rate (default: 0.00009)
 dr=0				# Deletion rate (default: 0.00011)

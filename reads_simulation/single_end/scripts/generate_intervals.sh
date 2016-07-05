@@ -52,7 +52,7 @@ function usage {
 
 #### Main #### --------------------------------------------------------------------------------------------------------------------
 
-mkdir -p ${tmp_outdir} ${tmp_dir}
+mkdir -p ${vcf_outdir} ${tmp_outdir} ${tmp_dir}
 
 # Generation of VCF file with different SNPs between the two strain if it does not already exists
 vcf_name=$(basename $full_vcf)
@@ -67,16 +67,21 @@ fi
 echo -e "  |\t$(basename $0) : Generating intervals BED file ..."
 
 # Awk to create intervals of 2*$read_length around every SNPs of the VCF on the desired chromosome
-awk -v chrom=$chr -v i=$inter_size '{if ($1 !~ /^#/) {if ($1 == chrom) {print "chr"$1,$2-i,$2+(i-1),$3":"$4"/"$5}}}' OFS='\t' ${diff_vcf} > $tmp_bed
+awk -v i=$inter_size '{if ($1 !~ /^#/) {print "chr"$1,$2-i,$2+(i-1),$3":"$4"/"$5}}' OFS='\t' ${diff_vcf} > ${tmp_bed}
 
 # Selection of intervals on mappability if bed specified by user
 if [[ -e ${mappa} ]]
 then
 	# Selection of region with mappability == 1
 	awk '{if ($4==1) print}' OFS='\t' $mappa > $map_uniq
-	${bedtools} intersect -a ${tmp_bed} -b ${map_uniq} -wa -f 1 > ${tmp_dir}tmp && mv ${tmp_dir}tmp ${tmp_bed}
+	${bedtools} intersect -a ${tmp_bed} -b ${map_uniq} -wa -f 1 > ${tmp_dir}tmp
+	mv ${tmp_dir}tmp ${tmp_bed}
 	# -f 1 means the mappability has to be 1 on all the interval
 fi
+
+# Selection of regions of interest (specified in bed file)
+${bedtools} intersect -a ${tmp_bed} -b ${regions} -wa -f 1 > ${tmp_dir}tmp
+mv ${tmp_dir}tmp ${tmp_bed}
 
 # Split interval BED files for allele specific read simulation
 echo -e "  |\t$(basename $0) : Defining ratio for intervals ..."
@@ -108,6 +113,5 @@ do
 	${simreads}scripts/generate_reads.sh -i ${id_geno2} -b ${bed} -n ${nb_geno2} -c ${config}
 done
 
-
 # Cleaning the file
-#rm -r ${tmp_dir}
+rm -r ${tmp_dir}

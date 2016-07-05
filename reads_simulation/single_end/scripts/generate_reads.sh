@@ -47,7 +47,7 @@ function usage {
 mkdir -p ${art_outdir} ${fasta_outdir}tmp/
 
 # Generation of the different fragments in fasta around the SNPs
-fasta=chr${chr}_$id_geno".fa"
+fasta=${id_geno}.fa
 int_fa=${fasta_outdir}tmp/${RANDOM}.fa
 tmp_int=${fasta_outdir}tmp/$RANDOM.inttmp
 
@@ -57,7 +57,6 @@ awk -v id=${id_geno} '{if ($1 ~ /^>/) print $1"_"id; else print}' ${int_fa} > ${
 
 # Simulation of reads with ART
 echo -e "  |\t$(basename $0) : Generation of reads with ART ..."
-echo "$int_fa et ${art_outdir}${int_fa%.fa} et ${read_length} et ${reads_number%.*}"
 ${art} -i ${int_fa} -o ${art_outdir}$(basename ${int_fa%.fa}) -l ${read_length} -c ${reads_number%.*} -ss ${sequencer} -rs ${rs} -ir ${ir} -dr ${dr} -qs ${subs} -sam
 
 rm ${int_fa}

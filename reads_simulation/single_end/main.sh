@@ -36,18 +36,16 @@ function usage {
 
 start=`date +%s`
 
-mkdir -p ${main_out}
-
 #### STEP 1 : Generation of the parental chromosomes
 
-if [[ ! -e ${fasta_outdir}chr${chr}_${id_geno1}.fa ]]
+if [[ ! -e ${fasta_outdir}${id_geno1}.fa ]]
 then
-	echo "Generation of the parental chromosome for ${id_geno1} ..."
+	echo "Generation of the parental genome for ${id_geno1} ..."
 	${simreads}scripts/build_parental_reference.sh -i ${id_geno1} -c ${config}
 fi
-if [[ ! -e ${fasta_outdir}chr${chr}_${id_geno2}.fa ]]
+if [[ ! -e ${fasta_outdir}${id_geno2}.fa ]]
 then
-	echo "Generation of the parental chromosome for ${id_geno2} ..."
+	echo "Generation of the parental genome for ${id_geno2} ..."
 	${simreads}scripts/build_parental_reference.sh -i ${id_geno2} -c ${config}
 fi
 
