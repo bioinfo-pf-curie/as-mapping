@@ -40,15 +40,15 @@ function usage {
 
 # Merging SAM files and converting to BAM
 echo -e "  |\t$(basename $0) : Rephasing SAM, merging files and converting to BAM ..."
-#for sam in `ls ${art_outdir}*.sam`
-#do
+for sam in `ls ${art_outdir}*.sam`
+do
 	# Get the information from every header to build a common header afterwards
-	#${samtools} view -H ${sam} | grep '^@HD' >> ${art_outdir}HD.tmp
-	#${samtools} view -H ${sam} | grep '^@SQ' >> ${art_outdir}SQ.tmp
-	#${samtools} view -H ${sam} | grep '^@PG' >> ${art_outdir}PG.tmp
-	# Modify the position of the reference name (chr) and the position
-	#awk '{if ($1 !~ /^@/) {split($1,a,":"); split(a[2],b,"-"); $3=a[1]; $4=b[1]+$4; print}}' OFS='\t' ${sam} >> ${art_outdir}SAM.tmp
-#done
+	${samtools} view -H ${sam} | grep '^@HD' >> ${art_outdir}HD.tmp
+	${samtools} view -H ${sam} | grep '^@SQ' >> ${art_outdir}SQ.tmp
+	${samtools} view -H ${sam} | grep '^@PG' >> ${art_outdir}PG.tmp
+	 Modify the position of the reference name (chr) and the position
+	awk '{if ($1 !~ /^@/) {split($1,a,":"); split(a[2],b,"-"); $3=a[1]; $4=b[1]+$4; print}}' OFS='\t' ${sam} >> ${art_outdir}SAM.tmp
+done
 
 uniq ${art_outdir}HD.tmp > ${art_outdir}HEADER.tmp
 sed -r 's/:[0-9]+-[0-9]+_[0-9a-Z]+_[0-9a-Z]+//' ${art_outdir}SQ.tmp | sort | uniq >> ${art_outdir}HEADER.tmp
