@@ -113,10 +113,10 @@ def comp_reads(list_reads,tag):
     Function description
     '''
     if (len(list_reads) > 2):
-    # If only two reads were reported
+    # Three reads have been reported
         return comp_three_reads(list_reads[0],list_reads[1],list_reads[2],tag)
     elif (len(list_reads) > 1):
-    # Three reads have been reported
+    # If only two reads were reported
         return comp_two_reads(list_reads[0],list_reads[1],tag)
     else:
         return list_reads[0]
