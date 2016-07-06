@@ -29,6 +29,7 @@ SNPsplit_genomes=${map_path}scripts/SNPsplit_genomes.sh
 diploid_genome=${map_path}scripts/diploid_genome.sh
 annotate_counts=${map_path}scripts/annotate_counts.py
 compMaptoGen=${map_path}scripts/compMaptoGen.py
+select_from_dip=${map_path}scripts/dip/select_from_diploid.py
 
  
 # ------------ Input(s) ------------

@@ -54,7 +54,7 @@ mkdir -p $sam_out
 #	Following this script, both parental genomes are generated in the $fasta_out directory
 #	with the named specified in $fasta_geno1 and $fasta_geno2
 
-if [[ ! -e $fasta_out${id_geno1}_${id_geno2}.fa ]]
+if [[ ! -e ${fasta_out}${id_geno1}_${id_geno2}.fa ]]
 then # Create diploid genome and indexes (generation of indexes within the script)
 	${diploid_genome} -c ${config}
 fi
@@ -68,10 +68,17 @@ bowtie2_indexes=$fasta_out$bowtie2_indexes
 ${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -k 3 -x $bowtie2_indexes${id_geno1}_${id_geno2} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno1}_${id_geno2}.bam
 
 
-exit
-
-
 ##### STEP 3 : BAM analysis TO BE DONE  -----------------------------------------------------------------
+
+# First step is to rename the header and the chromosome names
+${samtools} view -H ${sam_out}${id_geno1}_${id_geno2}.bam | grep -v -E "chr[A-Z0-9]+_${id_geno2}" | sed "s/_${id_geno1}\s/\t/" > ${sam_out}SAM.tmp
+${samtools} view ${sam_out}${id_geno1}_${id_geno2}.bam | sed -E 's/_[0-9a-Z_]+\s/\t/' >> ${sam_out}SAM.tmp
+${samtools} view -bS ${sam_out}SAM.tmp > ${sam_out}${id_geno1}_${id_geno2}_renamed.bam
+rm ${sam_out}SAM.tmp
+
+${select_from_dip} -b ${sam_out}${id_geno1}_${id_geno2}_renamed.bam -n ${id_geno1}_${id_geno2}_selected.bam -o ${sam_out}
+
+exit
 
 # Select best alignment and mark Allelic status
 #	Sort bam files by names
