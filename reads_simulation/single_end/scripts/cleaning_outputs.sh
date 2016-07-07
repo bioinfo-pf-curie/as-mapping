@@ -46,7 +46,7 @@ do
 	${samtools} view -H ${sam} | grep '^@HD' >> ${art_outdir}HD.tmp
 	${samtools} view -H ${sam} | grep '^@SQ' >> ${art_outdir}SQ.tmp
 	${samtools} view -H ${sam} | grep '^@PG' >> ${art_outdir}PG.tmp
-	 Modify the position of the reference name (chr) and the position
+	# Modify the position of the reference name (chr) and the position
 	awk '{if ($1 !~ /^@/) {split($1,a,":"); split(a[2],b,"-"); $3=a[1]; $4=b[1]+$4; print}}' OFS='\t' ${sam} >> ${art_outdir}SAM.tmp
 done
 

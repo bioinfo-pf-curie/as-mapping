@@ -71,30 +71,24 @@ ${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x ${bowtie2_indexes}${id_ref} -U 
 
 ##### STEP 2 : BAM analysis ----------------------------------------------------
 
-if [[ -z $diff_vcf ]]
-then # User did not specify a VCF with differential SNPs
-    mkdir -p ${vcf_out}
-    vcf=$(basename $full_vcf)
-    diff_vcf=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".vcf"
-    if [[ ! -e $diff_vcf ]]
-    then # Need to generate the VCF with the differential SNPs
-        echo "Generating VCF file of different SNPs between $id_geno1 and $id_geno2 ..."
-        $extract_SNPs -i $full_vcf -r $id_geno1 -a $id_geno2 -f 1 > $diff_vcf
-        end_vcf_gen=`date +%s`
-        echo "VCF file generated in "$((end_vcf_gen-start))" seconds."
-    fi  
-	if [[ -z $diff_bed ]]
-	then # User did not specify a BED with differential SNPs
-    	diff_bed=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".bed"
-    	if [[ ! -e $diff_bed ]]
-    	then # Need to generate the BED with the differential SNPs from VCF
-        	echo "Generating BED file of different SNPs between $id_geno1 and $id_geno2 from VCF file ..."
-        	awk '{if($1 !~ /^#/) print "chr"$1,$2-1,$2,$3":"$4"/"$5}' OFS='\t' $diff_vcf > $diff_bed
-        	end_bed_gen=`date +%s`
-        	echo "BED file generated in "$((end_bed_gen-start))" seconds."
-    	fi  
-	fi
-fi
+mkdir -p ${vcf_out}
+vcf=$(basename $full_vcf)
+diff_vcf=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".vcf"
+if [[ ! -e $diff_vcf ]]
+then # Need to generate the VCF with the differential SNPs
+    echo "Generating VCF file of different SNPs between $id_geno1 and $id_geno2 ..."
+    $extract_SNPs -i $full_vcf -r $id_geno1 -a $id_geno2 -f 1 > $diff_vcf
+    end_vcf_gen=`date +%s`
+    echo "VCF file generated in "$((end_vcf_gen-start))" seconds."
+fi  
+diff_bed=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".bed"
+if [[ ! -e $diff_bed ]]
+then # Need to generate the BED with the differential SNPs from VCF
+    echo "Generating BED file of different SNPs between $id_geno1 and $id_geno2 from VCF file ..."
+    awk '{if($1 !~ /^#/) print "chr"$1,$2-1,$2,$3":"$4"/"$5}' OFS='\t' $diff_vcf > $diff_bed
+    end_bed_gen=`date +%s`
+    echo "BED file generated in "$((end_bed_gen-start))" seconds."
+fi  
 
 # 	Script to add a flag with the allelic status for each read
  
