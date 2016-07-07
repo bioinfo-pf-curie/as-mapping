@@ -54,7 +54,6 @@ done
 
 # -- Generation of bowtie2 indexes
 echo "Creating bowtie2 indexes ..."
-bowtie2_indexes=$fasta_out$bowtie2_indexes
 ${bowtie2}bowtie2-build -f ${fasta_out}${fasta_diploid} ${bowtie2_indexes}${id_geno1}_${id_geno2}
 
 

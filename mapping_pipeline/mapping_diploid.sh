@@ -7,7 +7,7 @@
 #		STEP 2 : Mapping of the reads on the genome
 #		STEP 3 : BAM processing for Allele Specific analysis
 
-#### Parameters #### --------------------------------------------------------------------------------------------------------------
+#### Parameters #### --------------------------------------------------------------------
 
 # -- Local scripts for BAM analysis
 selectBest=${map_path}scripts/par/select_best.py
@@ -31,7 +31,9 @@ then
 fi
 source ${config}
 
-#### Function #### ----------------------------------------------------------------------------------------------------------------
+bam_analysis=${map_path}scripts/dip/dip_analysis.sh
+
+#### Function #### ----------------------------------------------------------------------
 
 # Get args
 function usage {
@@ -41,7 +43,7 @@ function usage {
     exit
 }
 
-#### Main #### --------------------------------------------------------------------------------------------------------------------
+#### Main #### --------------------------------------------------------------------------
 
 start=`date +%s`
 
@@ -50,7 +52,7 @@ sam_out=$sam_out"mapping_diploid/"
 mkdir -p $sam_out
 
 
-##### STEP 1 : Generation of the diploid genome ------------------------------------------------
+##### STEP 1 : Generation of the diploid genome -----------------------------------------
 #	Following this script, both parental genomes are generated in the $fasta_out directory
 #	with the named specified in $fasta_geno1 and $fasta_geno2
 
@@ -62,62 +64,12 @@ fi
 
 ##### STEP 2 : Alignment with Bowtie2 --------------------------------------------------------
 
-# Updating the location of the bowtie2 indexes
-bowtie2_indexes=$fasta_out$bowtie2_indexes
-
-${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -k 3 -x $bowtie2_indexes${id_geno1}_${id_geno2} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno1}_${id_geno2}.bam
+${bowtie2}bowtie2 ${B2_OPTIONS} ${B2_SCORING_OPT} -k 3 -x $bowtie2_indexes${id_geno1}_${id_geno2} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_geno1}_${id_geno2}.bam
 
 
-##### STEP 3 : BAM analysis TO BE DONE  -----------------------------------------------------------------
+##### STEP 3 : BAM analysis TO BE DONE  -------------------------------------------------
 
-# First step is to rename the header and the chromosome names
-${samtools} view -H ${sam_out}${id_geno1}_${id_geno2}.bam | grep -v -E "chr[A-Z0-9]+_${id_geno2}" | sed "s/_${id_geno1}\s/\t/" > ${sam_out}SAM.tmp
-${samtools} view ${sam_out}${id_geno1}_${id_geno2}.bam | sed -E 's/_[0-9a-Z_]+\s/\t/' >> ${sam_out}SAM.tmp
-${samtools} view -bS ${sam_out}SAM.tmp > ${sam_out}${id_geno1}_${id_geno2}_renamed.bam
-rm ${sam_out}SAM.tmp
-
-${select_from_dip} -b ${sam_out}${id_geno1}_${id_geno2}_renamed.bam -n ${id_geno1}_${id_geno2}_selected.bam -o ${sam_out}
-
-exit
-
-# Select best alignment and mark Allelic status
-#	Sort bam files by names
-${samtools} sort -n ${sam_out}${id_geno1}.bam ${sam_out}nsorted_${id_geno1}
-${samtools} sort -n ${sam_out}${id_geno2}.bam ${sam_out}nsorted_${id_geno2}
-${selectBest} -1 ${sam_out}nsorted_${id_geno1}.bam -2 ${sam_out}nsorted_${id_geno2}.bam -f selected_${id_geno1}_${id_geno2} -o ${sam_out}
-rm ${sam_out}nsorted_${id_geno1}.bam ${sam_out}nsorted_${id_geno2}.bam
-
-if [[ -z $diff_vcf ]]
-then # User did not specify a VCF with differential SNPs
-    mkdir -p ${vcf_out}
-    vcf=$(basename $full_vcf)
-    diff_vcf=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".vcf"
-    if [[ ! -e $diff_vcf ]]
-    then # Need to generate the VCF with the differential SNPs
-        echo "Generating VCF file of different SNPs between $id_geno1 and $id_geno2 ..."
-        $extract_SNPs -i $full_vcf -r $id_geno1 -a $id_geno2 -f 1 > $diff_vcf
-        end_vcf_gen=`date +%s`
-        echo "VCF file generated in "$((end_vcf_gen-start))" seconds."
-    fi  
-    if [[ -z $diff_bed ]]
-    then # User did not specify a BED with differential SNPs
-        diff_bed=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".bed"
-        if [[ ! -e $diff_bed ]]
-        then # Need to generate the BED with the differential SNPs from VCF
-            echo "Generating BED file of different SNPs between $id_geno1 and $id_geno2 from VCF file ..."
-            awk '{if($1 !~ /^#/) print "chr"$1,$2-1,$2,$3":"$4"/"$5}' OFS='\t' $diff_vcf > $diff_bed
-            end_bed_gen=`date +%s`
-            echo "BED file generated in "$((end_bed_gen-start))" seconds."
-        fi  
-    fi  
-fi
-
-#   Mpileup to counts the bases present at every SNP positions in the read
-mkdir -p ${sam_out}mpileup
-${samtools} sort ${sam_out}selected_${id_geno1}_${id_geno2}.bam ${sam_out}sorted_${id_geno1}_${id_geno2} && ${samtools} index ${sam_out}sorted_${id_geno1}_${id_geno2}.bam
-${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${id_geno1}_${id_geno2}.bam > ${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup
-echo -e "mapping_parental\t${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup" > ${sam_out}mpileup/CONFIG
-${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_parental.txt
+${bam_analysis} -c ${config}
 
 end=`date +%s`
 echo " ====================================================== "

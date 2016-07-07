@@ -7,7 +7,7 @@
 #		STEP 2 : BAM processing for Allele Specific analysis
 
 
-#### Parameters #### --------------------------------------------------------------------------------------------------------------
+#### Parameters #### --------------------------------------------------------------------
 
 while [ $# -gt 0 ] 
 do
@@ -28,10 +28,9 @@ then
 fi
 source ${config}
 
-# -- Local scripts for BAM analysis
-markAllelicStatus=${map_path}scripts/ref/markAllelicStatus.py
+bam_analysis=${map_path}scripts/ref/ref_analysis.sh
 
-#### Function #### ----------------------------------------------------------------------------------------------------------------
+#### Function #### ----------------------------------------------------------------------
 
 # Get args
 function usage {
@@ -41,11 +40,11 @@ function usage {
     exit
 }
 
-#### Main #### --------------------------------------------------------------------------------------------------------------------
+#### Main #### --------------------------------------------------------------------------
 
 start=`date +%s`
 
-##### STEP 1 : Alignment to reference genome ----------------------------------------------------
+##### STEP 1 : Alignment to reference genome --------------------------------------------
 
 # Set up output directory for this method of mapping in the main output directory
 sam_out=${sam_out}mapping_reference/
@@ -55,9 +54,6 @@ mkdir -p ${sam_out}
 id_ref=$(basename ${ref_geno})
 id_ref=${id_ref%.fa}
 
-# Updating the location of the bowtie2 indexes (might change as well, same reason as above)
-bowtie2_indexes=${ref_geno%$id_ref.fa}${bowtie2_indexes}
-
 # Create bowtie2 indexes if they do not exist
 if [ ! -e ${bowtie2_indexes}${id_ref}.rev.2.bt2 ]
 then
@@ -66,59 +62,12 @@ then
 	${bowtie2}bowtie2-build -f ${fasta_out}${id_ref}.fa ${bowtie2_indexes}${id_ref}
 fi
 
-${bowtie2}bowtie2 $SCORING_OPT --reorder -p 8 -x ${bowtie2_indexes}${id_ref} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_ref}.bam
+${bowtie2}bowtie2 ${B2_OPTIONS} ${B2_SCORING_OPT} -x ${bowtie2_indexes}${id_ref} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_ref}.bam
 
 
-##### STEP 2 : BAM analysis ----------------------------------------------------
+##### STEP 2 : BAM analysis -------------------------------------------------------------
 
-mkdir -p ${vcf_out}
-vcf=$(basename $full_vcf)
-diff_vcf=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".vcf"
-if [[ ! -e $diff_vcf ]]
-then # Need to generate the VCF with the differential SNPs
-    echo "Generating VCF file of different SNPs between $id_geno1 and $id_geno2 ..."
-    $extract_SNPs -i $full_vcf -r $id_geno1 -a $id_geno2 -f 1 > $diff_vcf
-    end_vcf_gen=`date +%s`
-    echo "VCF file generated in "$((end_vcf_gen-start))" seconds."
-fi  
-diff_bed=$vcf_out${vcf%.vcf}"_"$id_geno1"_"$id_geno2".bed"
-if [[ ! -e $diff_bed ]]
-then # Need to generate the BED with the differential SNPs from VCF
-    echo "Generating BED file of different SNPs between $id_geno1 and $id_geno2 from VCF file ..."
-    awk '{if($1 !~ /^#/) print "chr"$1,$2-1,$2,$3":"$4"/"$5}' OFS='\t' $diff_vcf > $diff_bed
-    end_bed_gen=`date +%s`
-    echo "BED file generated in "$((end_bed_gen-start))" seconds."
-fi  
-
-# 	Script to add a flag with the allelic status for each read
- 
-mkdir -p ${sam_out}AllelicStatus
-${markAllelicStatus} -i ${sam_out}${id_ref}.bam -s ${diff_vcf} -r -o ${sam_out}AllelicStatus/${id_ref}_withAS.bam
-
-#	Mpileup to counts the bases present at every SNP positions in the read
-mkdir -p ${sam_out}mpileup
-${samtools} view -h ${sam_out}AllelicStatus/${id_ref}_withAS.bam | grep -v 'XA:i:3' | ${samtools} view -bS - > ${sam_out}non_ambiguous.bam
-${samtools} sort ${sam_out}non_ambiguous.bam ${sam_out}sorted_${id_ref} && ${samtools} index ${sam_out}sorted_${id_ref}.bam
-${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${id_ref}.bam > ${sam_out}mpileup/${id_ref}.pileup
-echo -e "mapping_reference\t${sam_out}mpileup/${id_ref}.pileup" > ${sam_out}mpileup/CONFIG
-${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_reference.txt
-${annotate_counts} -i ${sam_out}mpileup/counts_mapping_reference.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_reference.txt
-# 	Cleaning 
-rm ${sam_out}sorted_${id_ref}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/${id_ref}.pileup
-
-#	Comparison between generated BAM and mapped reads
-gen_bam=${fq_reads%.fq.gz}.bam
-if [[ -e ${gen_bam} ]]
-then
-	mkdir -p ${sam_out}comptoGen
-	${samtools} sort -n ${sam_out}AllelicStatus/${id_ref}_withAS.bam ${sam_out}nsorted_${id_ref}
-	${samtools} sort -n ${gen_bam} ${sam_out}nsorted_generated
-	${compMaptoGen} -1 ${id_geno1} -2 ${id_geno2} -g ${sam_out}nsorted_generated.bam -m ${sam_out}nsorted_${id_ref}.bam -o ${sam_out}comptoGen/ -u
-	# Cleaning
-	rm ${sam_out}nsorted_${id_ref}.bam ${sam_out}nsorted_generated.bam
-fi
+${bam_analysis} -c ${config}
 
 end=`date +%s`
-echo " ======================================================= "
-echo "	mapping_reference.sh run in "$((end-start))" seconds."
-echo " ======================================================= "
+echo "## mapping_reference.sh run in "$((end-start))" seconds."

@@ -427,8 +427,8 @@ if __name__ == "__main__":
 
         handle_stat.write("Total number of reads\t" + str(reads_counter) + "\t100" + "\n")
         handle_stat.write("Number of reads with at least one 'N'\t" + str(N_counter) + "\t" + str(round(float(N_counter)/int(reads_counter)*100,3)) + "\n")
-        handle_stat.write("Number of reads assigned to ref genome\t" + str(g1_counter) + "\t" + str(round(float(g1_counter)/int(reads_counter)*100,3)) + "\n")
-        handle_stat.write("Number of reads assigned to alt genome\t" + str(g2_counter) + "\t" + str(round(float(g2_counter)/int(reads_counter)*100,3)) + "\n")
+        handle_stat.write("Number of reads assigned to first genome\t" + str(g1_counter) + "\t" + str(round(float(g1_counter)/int(reads_counter)*100,3)) + "\n")
+        handle_stat.write("Number of reads assigned to second genome\t" + str(g2_counter) + "\t" + str(round(float(g2_counter)/int(reads_counter)*100,3)) + "\n")
         handle_stat.write("Number of conflicting reads\t" + str(cf_counter) + "\t" + str(round(float(cf_counter)/int(reads_counter)*100,3)) + "\n")
         handle_stat.write("Number of unassigned reads\t" + str(ua_counter) + "\t" + str(round(float(ua_counter)/int(reads_counter)*100,3)) + "\n")
         handle_stat.close()

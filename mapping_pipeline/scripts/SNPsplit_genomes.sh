@@ -67,9 +67,9 @@ rm -r *_full_sequence/ *_N-masked/ SNPs_*/ *.gz
 # -- Generation of bowtie2 indexes
 echo "Creating bowtie2 indexes ..."
 
-${bowtie2}bowtie2-build -f ${fasta_out}${id_geno1}.fa ${fasta_out}${bowtie2_indexes}${id_geno1}
-${bowtie2}bowtie2-build -f ${fasta_out}${id_geno2}.fa ${fasta_out}${bowtie2_indexes}${id_geno2}
-${bowtie2}bowtie2-build -f ${fasta_out}N-masked_${id_geno1}_${id_geno2}.fa ${fasta_out}${bowtie2_indexes}N-masked_${id_geno1}_${id_geno2}
+${bowtie2}bowtie2-build -f ${fasta_out}${id_geno1}.fa ${bowtie2_indexes}${id_geno1}
+${bowtie2}bowtie2-build -f ${fasta_out}${id_geno2}.fa ${bowtie2_indexes}${id_geno2}
+${bowtie2}bowtie2-build -f ${fasta_out}N-masked_${id_geno1}_${id_geno2}.fa ${bowtie2_indexes}N-masked_${id_geno1}_${id_geno2}
 
 
 end=`date +%s`
