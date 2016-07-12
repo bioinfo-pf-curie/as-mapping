@@ -74,6 +74,7 @@ ${annotate_counts} -i ${sam_out}mpileup/counts_mapping_Nmask.txt -s ${diff_vcf} 
 #   Cleaning 
 rm ${sam_out}sorted_${masked_genome}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/${masked_genome}.pileup
 
+
 # Comparison between generated BAM and mapped reads
 gen_bam=${fq_reads%.fq.gz}.bam
 if [[ -e ${gen_bam} ]]
