@@ -25,6 +25,9 @@ extract_SNPs=${simreads}scripts/extract_snps.py
 id_geno1="CAST_EiJ"
 id_geno2="129S1_SvImJ"
 
+#   Coverage
+coverage=100
+
 #   BED file with the desired region for generation
 regions="REGIONS_SELECTED.bed"
 

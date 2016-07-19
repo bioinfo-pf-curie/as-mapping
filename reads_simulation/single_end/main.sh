@@ -9,7 +9,6 @@ while [ $# -gt 0 ]
 do
     case "$1" in
     (-c) config=$2; shift;;
-	(-n) number_reads=$2; shift;;
     (-h) usage;;
     (--) shift; break;;
     (-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;; 

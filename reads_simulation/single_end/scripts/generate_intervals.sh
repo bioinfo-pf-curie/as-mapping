@@ -107,8 +107,8 @@ echo -e "  |\t$(basename $0) : Generating reads with ART ..."
 
 for bed in `ls --color=never ${tmp_dir}*.bed`
 do
-	nb_geno1=$(echo "$read_length * $(basename ${bed%.bed})" | bc)
-	nb_geno2=$(echo "$read_length * (1-$(basename ${bed%.bed}))" | bc)
+	nb_geno1=$(echo "${coverage} * $(basename ${bed%.bed})" | bc)
+	nb_geno2=$(echo "${coverage} * (1-$(basename ${bed%.bed}))" | bc)
 	${simreads}scripts/generate_reads.sh -i ${id_geno1} -b ${bed} -n ${nb_geno1} -c ${config}
 	${simreads}scripts/generate_reads.sh -i ${id_geno2} -b ${bed} -n ${nb_geno2} -c ${config}
 done
