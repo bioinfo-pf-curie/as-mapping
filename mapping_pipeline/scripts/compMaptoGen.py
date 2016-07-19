@@ -160,6 +160,7 @@ if __name__ == "__main__":
             dict_counter[pos]["wrong"] = 0
             dict_counter[pos]["unmapped"] = 0
         dict_counter[pos]["total"] += 1                # Increments total read for this interval
+        x.set_tag(TAG_POS,str(y.reference_name)+'-'+str(y.pos),value_type="Z")
         if (x.pos==y.pos):                            # Read mapped correctly (consider that read mapping to the exact same region on another chromosome is pretty unlikely)
             tmp_split=x.qname.split("_", 1 )        # Get the name of the strain
             strain=tmp_split[1].split("-",1)[0]    
@@ -173,7 +174,6 @@ if __name__ == "__main__":
                 dict_counter[pos]["wrong"] += 1        # Increments incorrect mapped read counter
                 x.set_tag(TAG_MAP,2)                        # Set tag XM:i:2 for incorrectly mapped read
             if (rep_xm):
-                x.set_tag(TAG_POS,str(y.reference_name)+'-'+str(y.pos),value_type="Z")
                 gen_xm.write(x)
         outfile.write(x)
         if (counter_read % 1000000 == 0):
