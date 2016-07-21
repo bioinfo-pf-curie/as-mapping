@@ -59,7 +59,7 @@ if [ ! -e ${bowtie2_indexes}${id_ref}.rev.2.bt2 ]
 then
 	echo "Generating bowtie2 indexes ..."
 	mkdir $bowtie2_indexes
-	${bowtie2}bowtie2-build -f ${fasta_out}${id_ref}.fa ${bowtie2_indexes}${id_ref}
+	${bowtie2}bowtie2-build -f ${ref_geno} ${bowtie2_indexes}${id_ref}
 fi
 
 ${bowtie2}bowtie2 ${B2_OPTIONS} ${B2_SCORING_OPT} -x ${bowtie2_indexes}${id_ref} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_ref}.bam

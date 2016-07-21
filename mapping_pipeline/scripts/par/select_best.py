@@ -101,9 +101,9 @@ if __name__ == "__main__":
 
 	# Test arguments
 	if ((par1 is None) | (par2 is None)):
-		print "INPUT ERROR : BAM file(s) not specified in arguments."
+		sys.stderr.write("INPUT ERROR : BAM file(s) not specified in arguments.")
 		usage()
-		sys.exit()
+		sys.exit(1)
 
 	##################################################################
 

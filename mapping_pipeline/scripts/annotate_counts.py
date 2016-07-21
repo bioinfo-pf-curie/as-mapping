@@ -199,13 +199,13 @@ if __name__ == "__main__":
 
 	# Test arguments
 	if (snpFile is None):
-		print "INPUT ERROR : VCF file not specified in arguments."
+		sys.stderr.write("INPUT ERROR : VCF file not specified in arguments.")
 		usage()
-		sys.exit()
+		sys.exit(1)
 	if (inputFile is None):
-		print "INPUT ERROR : Counts file not specified in arguments."
+		sys.stderr.write("INPUT ERROR : Counts file not specified in arguments.")
 		usage()
-		sys.exit()
+		sys.exit(1)
 
 	##################################################################
 	
@@ -259,7 +259,8 @@ if __name__ == "__main__":
 		total=int(fields[4])
 		other=total-(count1+count2)
 		# Write the line on standard output
-		print barcode + "\t" + chromosome + "\t" + str(position) + "\t" + geno1 + "\t" + geno2 + "\t" + str(count1) + "\t" + str(count2) + "\t" + str(other) + "\t" + str(total)
+		print barcode + "\t" + chromosome + "\t" + str(position) + "\t" + geno1 + "\t" + geno2 + "\t" + \
+str(count1) + "\t" + str(count2) + "\t" + str(other) + "\t" + str(total)
 
 	# Close handler
 	file_handle.close()

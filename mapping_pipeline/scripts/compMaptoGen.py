@@ -59,7 +59,7 @@ def usage():
     print "-1/--strain1 <name of strain 1>"
     print "-2/--strain2 <name of strain 2>"
     print "[-o/--output_dir] <Output directory>"
-    print "[-u/--unmapped] <report XM:i:2 and XM:i:3 from mapped and generated BAM in a supplementary BAM file>"
+    print "[-u/--unmapped] <report XM:i:2 and XM:i:3 in a supplementary BAM file>"
     print "[-h/--help] <Help>"
     return
 
@@ -123,13 +123,13 @@ if __name__ == "__main__":
     
     # Test arguments
     if ((strain1 == "") | (strain2 == "")):
-        print "INPUT ERROR : strain name(s) not specified in arguments."
+        sys.stderr.write("INPUT ERROR : strain name(s) not specified in arguments.")
         usage()
-        sys.exit()
+        sys.exit(1)
     if ((genbam is None) | (mapbam is None)):
-        print "INPUT ERROR : BAM file(s) not specified in arguments."
+        sys.stderr.write("INPUT ERROR : BAM file(s) not specified in arguments.")
         usage()
-        sys.exit()
+        sys.exit(1)
 
     ##################################################################
 
