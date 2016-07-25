@@ -79,7 +79,7 @@ def get_args():
 
 OUTBAM = "mapping_status.bam"
 REPBAM = "map_gen_XM2-3.bam"
-OUTCOUNTS = "allele_counts.txt"
+OUTCOUNTS = "interval_counts.txt"
 TAG_MAP = "XM"
 TAG_POS = "XP"
 
@@ -160,7 +160,7 @@ if __name__ == "__main__":
             dict_counter[pos]["wrong"] = 0
             dict_counter[pos]["unmapped"] = 0
         dict_counter[pos]["total"] += 1                # Increments total read for this interval
-        x.set_tag(TAG_POS,str(y.reference_name)+'-'+str(y.pos),value_type="Z")
+        x.set_tag(TAG_POS,str(y.reference_name)+'-'+str(y.pos+1),value_type="Z") # +1 because BAM 0-based
         if (x.pos==y.pos):                            # Read mapped correctly (consider that read mapping to the exact same region on another chromosome is pretty unlikely)
             tmp_split=x.qname.split("_", 1 )        # Get the name of the strain
             strain=tmp_split[1].split("-",1)[0]    
