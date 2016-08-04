@@ -67,12 +67,22 @@ ${markAllelicStatus} -i ${sam_out}${masked_genome}.bam -s ${diff_vcf} -r -o ${sa
 mkdir -p ${sam_out}mpileup
 ${samtools} view -h ${sam_out}AllelicStatus/${masked_genome}_withAS.bam | grep -v 'XA:i:3' | ${samtools} view -bS - > ${sam_out}non_ambiguous.bam
 ${samtools} sort ${sam_out}non_ambiguous.bam ${sam_out}sorted_${masked_genome} && ${samtools} index ${sam_out}sorted_${masked_genome}.bam
+
+# Pileup without filtering
 ${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${masked_genome}.bam > ${sam_out}mpileup/${masked_genome}.pileup
-echo -e "mapping_N_masked\t${sam_out}mpileup/${masked_genome}.pileup" > ${sam_out}mpileup/CONFIG
+echo -e "N\t${sam_out}mpileup/${masked_genome}.pileup" > ${sam_out}mpileup/CONFIG
+
+${samtools} mpileup -l ${diff_bed} -Q 0 -q 20 ${sam_out}sorted_${masked_genome}.bam > ${sam_out}mpileup/${masked_genome}_filtered.pileup
+echo -e "N_filtered\t${sam_out}mpileup/${masked_genome}_filtered.pileup" >> ${sam_out}mpileup/CONFIG
+
+diff_bed_ori=/bioinfo/users/khillion/AS_proj/generated_reads/0704_adapt_SNPsplit/data/vcfs/diff_SNPs.bed
+${samtools} mpileup -l ${diff_bed_ori} -Q 0 ${sam_out}sorted_${masked_genome}.bam > ${sam_out}mpileup/${masked_genome}_origin.pileup
+echo -e "N_origin\t${sam_out}mpileup/${masked_genome}_origin.pileup" >> ${sam_out}mpileup/CONFIG
+
 ${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_Nmask.txt
 ${annotate_counts} -i ${sam_out}mpileup/counts_mapping_Nmask.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_Nmask.txt
 #   Cleaning 
-rm ${sam_out}sorted_${masked_genome}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/${masked_genome}.pileup
+rm ${sam_out}sorted_${masked_genome}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/*.pileup
 
 
 # Comparison between generated BAM and mapped reads

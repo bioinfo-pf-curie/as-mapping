@@ -72,12 +72,21 @@ fi
 mkdir -p ${sam_out}mpileup
 ${samtools} view -h ${sam_out}selected_${id_geno1}_${id_geno2}.bam | grep -v 'XA:i:3' | ${samtools} view -bS - > ${sam_out}non_ambiguous.bam
 ${samtools} sort ${sam_out}non_ambiguous.bam ${sam_out}sorted_${id_geno1}_${id_geno2} && ${samtools} index ${sam_out}sorted_${id_geno1}_${id_geno2}.bam
+
 ${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${id_geno1}_${id_geno2}.bam > ${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup
-echo -e "mapping_diploid\t${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup" > ${sam_out}mpileup/CONFIG
+echo -e "dip\t${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup" > ${sam_out}mpileup/CONFIG
+
+${samtools} mpileup -l ${diff_bed} -Q 0 -q 20 ${sam_out}sorted_${id_geno1}_${id_geno2}.bam > ${sam_out}mpileup/${id_geno1}_${id_geno2}_filtered.pileup
+echo -e "dip_filtered\t${sam_out}mpileup/${id_geno1}_${id_geno2}_filtered.pileup" >> ${sam_out}mpileup/CONFIG
+
+diff_bed_ori=/bioinfo/users/khillion/AS_proj/generated_reads/0704_adapt_SNPsplit/data/vcfs/diff_SNPs.bed
+${samtools} mpileup -l ${diff_bed_ori} -Q 0 ${sam_out}sorted_${id_geno1}_${id_geno2}.bam > ${sam_out}mpileup/${id_geno1}_${id_geno2}_origin.pileup
+echo -e "dip_origin\t${sam_out}mpileup/${id_geno1}_${id_geno2}_origin.pileup" >> ${sam_out}mpileup/CONFIG
+
 ${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_diploid.txt
 ${annotate_counts} -i ${sam_out}mpileup/counts_mapping_diploid.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_diploid.txt
 #   Cleaning 
-rm ${sam_out}sorted_${id_geno1}_${id_geno2}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/${id_geno1}_${id_geno2}.pileup
+rm ${sam_out}sorted_${id_geno1}_${id_geno2}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/*.pileup
 
 # Comparison between generated BAM and mapped reads
 gen_bam=${fq_reads%.fq.gz}.bam

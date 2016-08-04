@@ -68,12 +68,21 @@ ${markAllelicStatus} -i ${sam_out}${id_ref}.bam -s ${diff_vcf} -r -o ${sam_out}A
 mkdir -p ${sam_out}mpileup
 ${samtools} view -h ${sam_out}AllelicStatus/${id_ref}_withAS.bam | grep -v 'XA:i:3' | ${samtools} view -bS - > ${sam_out}non_ambiguous.bam
 ${samtools} sort ${sam_out}non_ambiguous.bam ${sam_out}sorted_${id_ref} && ${samtools} index ${sam_out}sorted_${id_ref}.bam
+
 ${samtools} mpileup -l ${diff_bed} -Q 0 ${sam_out}sorted_${id_ref}.bam > ${sam_out}mpileup/${id_ref}.pileup
-echo -e "mapping_reference\t${sam_out}mpileup/${id_ref}.pileup" > ${sam_out}mpileup/CONFIG
+echo -e "ref\t${sam_out}mpileup/${id_ref}.pileup" > ${sam_out}mpileup/CONFIG
+
+${samtools} mpileup -l ${diff_bed} -Q 0 -q 20 ${sam_out}sorted_${id_ref}.bam > ${sam_out}mpileup/${id_ref}_filtered.pileup
+echo -e "ref_filtered\t${sam_out}mpileup/${id_ref}_filtered.pileup" >> ${sam_out}mpileup/CONFIG
+
+diff_bed_ori=/bioinfo/users/khillion/AS_proj/generated_reads/0704_adapt_SNPsplit/data/vcfs/diff_SNPs.bed
+${samtools} mpileup -l ${diff_bed_ori} -Q 0 ${sam_out}sorted_${id_ref}.bam > ${sam_out}mpileup/${id_ref}_origin.pileup
+echo -e "ref_origin\t${sam_out}mpileup/${id_ref}_origin.pileup" >> ${sam_out}mpileup/CONFIG
+
 ${checkVariants} ${sam_out}mpileup/CONFIG ${ref_geno} > ${sam_out}mpileup/counts_mapping_reference.txt
 ${annotate_counts} -i ${sam_out}mpileup/counts_mapping_reference.txt -s ${diff_vcf} > ${sam_out}mpileup/final_counts_mapping_reference.txt
 #   Cleaning 
-rm ${sam_out}sorted_${id_ref}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/${id_ref}.pileup
+rm ${sam_out}sorted_${id_ref}.b* ${sam_out}non_ambiguous.bam ${sam_out}mpileup/*.pileup
 
 # Comparison between generated BAM and mapped reads
 gen_bam=${fq_reads%.fq.gz}.bam

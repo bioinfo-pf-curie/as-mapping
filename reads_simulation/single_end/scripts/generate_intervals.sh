@@ -27,8 +27,6 @@ then
     exit
 fi
 
-echo $config
-
 source ${config}
 
 # Size of intervals used for the simulation
