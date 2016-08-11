@@ -24,8 +24,6 @@ then
 fi
 source ${config}
 
-# -- Local scripts for BAM analysis
-markAllelicStatus=${map_path}scripts/Nmask/markAllelicStatus.py
 
 #### Function #### ----------------------------------------------------------------------
 

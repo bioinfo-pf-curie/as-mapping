@@ -24,8 +24,6 @@ then
 fi
 source ${config}
 
-# -- Local scripts for BAM analysis
-markAllelicStatus=${map_path}scripts/ref/markAllelicStatus.py
 
 #### Function #### ----------------------------------------------------------------------
 
@@ -62,7 +60,7 @@ fi
 
 # Script to add a flag with the allelic status for each read
 mkdir -p ${sam_out}AllelicStatus
-${markAllelicStatus} -i ${sam_out}${id_ref}.bam -s ${diff_vcf} -r -o ${sam_out}AllelicStatus/${id_ref}_withAS.bam
+${markAllelicStatus} -i ${sam_out}${id_ref}.bam -s ${diff_vcf} -r -f -o ${sam_out}AllelicStatus/${id_ref}_withAS.bam
 
 # Mpileup to counts the bases present at every SNP positions in the read
 mkdir -p ${sam_out}mpileup

@@ -47,22 +47,32 @@ ${SNPsplit_gen} --nmasking --strain ${id_geno1} --strain2 ${id_geno2} --referenc
 # -- Concatenetion of the parental genome in fasta files
 for geno in $id_geno1 $id_geno2
 do
-	for i in `seq 1 19` X Y M 
+	for i in `seq 1 19` MT X Y 
 	do
-		sed 's/>/>chr/' ${geno}_full_sequence/chr${i}.SNPs_introduced.fa >> ${fasta_out}${geno}.fa
-	done
+        if [[ $i == MT ]]
+        then
+            sed 's/>MT/>chrM/' ${geno}_full_sequence/chr${i}.SNPs_introduced.fa >> ${fasta_out}${geno}.fa
+		else
+            sed 's/>/>chr/' ${geno}_full_sequence/chr${i}.SNPs_introduced.fa >> ${fasta_out}${geno}.fa
+	    fi
+    done
 done
 
 # -- Concatenation of the N-masked genome
-for i in `seq 1 19` X Y M
+for i in `seq 1 19` MT X Y
 do
-	sed 's/>/>chr/' ${id_geno1}_${id_geno2}_*_N-masked/chr${i}.N-masked.fa >> ${fasta_out}N-masked_${id_geno1}_${id_geno2}.fa
+    if [[ $i == MT ]]
+    then
+        sed 's/>MT/>chrM/' ${id_geno1}_${id_geno2}_*_N-masked/chr${i}.N-masked.fa >> ${fasta_out}N-masked_${id_geno1}_${id_geno2}.fa
+    else
+	    sed 's/>/>chr/' ${id_geno1}_${id_geno2}_*_N-masked/chr${i}.N-masked.fa >> ${fasta_out}N-masked_${id_geno1}_${id_geno2}.fa
+    fi
 done
 
 # -- Deleting non used files
-mkdir reports
-mv *.txt reports/
-rm -r *_full_sequence/ *_N-masked/ SNPs_*/ *.gz
+mkdir output_SNPsplit_gen/
+mv *.txt *_full_sequence *_N-masked/ *gz SNPs_*/ output_SNPsplit_gen/
+mv output_SNPsplit_gen/ ${fasta_out}
 
 # -- Generation of bowtie2 indexes
 echo "Creating bowtie2 indexes ..."

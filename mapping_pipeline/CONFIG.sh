@@ -28,7 +28,7 @@ diploid_genome=${map_path}scripts/diploid_genome.sh
 annotate_counts=${map_path}scripts/annotate_counts.py
 compMaptoGen=${map_path}scripts/compMaptoGen.py
 select_from_dip=${map_path}scripts/dip/select_from_diploid.py
-
+markAllelicStatus=${map_path}scripts/markAllelicStatus.py
  
 # ------------ Input(s) ------------
 
@@ -52,7 +52,7 @@ id_geno2="129S1_SvImJ"
 # ------------ Output(s) ------------
 
 # Output directories for files to be reused (N masked genome, indexes ...)
-main_out="/bioinfo/users/khillion/AS_proj/mapping_pipeline/data/"
+main_out="/bioinfo/users/khillion/AS_proj/mapped_reads/data/"
 
 #	Output directory for BAM
 sam_out="MAPPED_OUTDIR"
