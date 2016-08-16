@@ -1,4 +1,6 @@
-#!/bin/bash
+
+############################## CONFIG FILE ##################################
+
 # Author(s) : Kenzo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) : CONFIG file for mapping of reads with different methods :
@@ -7,34 +9,28 @@
 #	 : Mapping to diploid genome (both parental chromosomes in the same time)
 #	 : Mapping to reference N-masked genome
 
-############################## CONFIG FILE ##################################
-
-
-# ------------ Tools path(s) ------------
+# ------------ Tool paths ------------
 
 # Required installed tools
-bowtie2=/bioinfo/local/build/bowtie2/bowtie2-2.2.5/
-samtools=/bioinfo/local/build/samtools/samtools/bin/samtools
-checkVariants=/bioinfo/users/khillion/bin/clinTools/check_variants.py
-SNPsplit_gen=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
-# Local scripts
+PYTHON=/bioinfo/local/build/python/python-2.7.9/bin/python2.7
+BOWTIE2_DIR=/bioinfo/local/build/bowtie2/bowtie2-2.2.5/
+SAMTOOLS=/bioinfo/local/build/samtools/samtools/bin/samtools
+CHECK_VARIANTS=/bioinfo/users/khillion/bin/clinTools/check_variants.py
+SNPSPLIT_GEN=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
 
+
+# Local scripts
 #	Paths to the directory with the different scripts
-map_path=/bioinfo/users/khillion/GIT_dev/as-mapping/mapping_pipeline/
-# OTHER CONFIG FILE ?
-extract_SNPs=${map_path}scripts/extract_snps.py
-SNPsplit_genomes=${map_path}scripts/SNPsplit_genomes.sh
-diploid_genome=${map_path}scripts/diploid_genome.sh
-annotate_counts=${map_path}scripts/annotate_counts.py
-compMaptoGen=${map_path}scripts/compMaptoGen.py
-select_from_dip=${map_path}scripts/dip/select_from_diploid.py
-markAllelicStatus=${map_path}scripts/markAllelicStatus.py
+MAP_PATH=/bioinfo/users/khillion/GIT_dev/as-mapping/mapping_pipeline
+#   Get local scripts from the pipeline
+source LOCAL_SCRIPTS ${MAP_PATH}
+
  
 # ------------ Input(s) ------------
 
 # Files or Directories
 #   Path of the reads to map (either .fq or .fq.gz)
-fq_reads="READS_PATH"
+FQ_READS="READS_PATH"
 #   Full reference genome (fasta format)
 ref_geno="/data/annotations/Mouse/mm10/complete/mm10.fa"
 #   Directory containing every chromosomes of the reference genome at the fasta format

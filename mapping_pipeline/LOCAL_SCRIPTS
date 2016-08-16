@@ -1,0 +1,10 @@
+
+############################## LOCAL SCRIPTS ##################################
+
+EXTRACT_SNPS=i${2}/scripts/extracts_snps.py
+SNPSPLIT_GENOMES=${2}/scripts/SNPsplit_genomes.sh
+DIPLOID_GENOMES=${2}/scripts/diploid_genomes.sh
+ANNOTATE_COUNTS=${2}/scripts/annotate_counts.py
+COMPMAPTOGEN=${2}/scripts/compMaptoGen.py
+SELECT_FROM_DIP=${2}/scripts/dip/select_from_diploid.py
+MARKALLELICSTATUS=${2}/scripts/markAllelicStatus.py
