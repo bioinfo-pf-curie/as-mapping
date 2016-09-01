@@ -44,25 +44,23 @@ function usage {
 
 start=`date +%s`
 
-##### STEP 1 : Alignment to reference genome --------------------------------------------
-
 # Set up output directory for this method of mapping in the main output directory
-sam_out=${sam_out}mapping_reference/
-mkdir -p ${sam_out}
+BAM_OUT=${OUT_DIR}/mapping_reference
+mkdir -p ${BAM_OUT}/
 
 # Get the name of the reference genome to use already existing indexes (might change this part to work directly on my own indexes)
-id_ref=$(basename ${ref_geno})
-id_ref=${id_ref%.fa}
+ID_REF=$(basename ${REF_GENO})
+ID_REF=${ID_REF%.fa}
 
 # Create bowtie2 indexes if they do not exist
-if [ ! -e ${bowtie2_indexes}${id_ref}.rev.2.bt2 ]
+if [ ! -e ${INDEXES}${ID_REF}.rev.2.bt2 ]
 then
 	echo "Generating bowtie2 indexes ..."
-	mkdir $bowtie2_indexes
-	${bowtie2}bowtie2-build -f ${ref_geno} ${bowtie2_indexes}${id_ref}
+	mkdir $INDEXES
+	${bowtie2}bowtie2-build -f ${ref_geno} ${INDEXES}${ID_REF}
 fi
 
-${bowtie2}bowtie2 ${B2_OPTIONS} ${B2_SCORING_OPT} -x ${bowtie2_indexes}${id_ref} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${id_ref}.bam
+${bowtie2}bowtie2 ${B2_OPTIONS} ${B2_SCORING_OPT} -x ${INDEXES}${ID_REF} -U $fq_reads | ${samtools} view -bS - > ${sam_out}${ID_REF}.bam
 
 
 ##### STEP 2 : BAM analysis -------------------------------------------------------------

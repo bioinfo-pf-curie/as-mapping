@@ -13,7 +13,6 @@
 
 # Required installed tools
 PYTHON=/bioinfo/local/build/python/python-2.7.9/bin/python2.7
-BOWTIE2_DIR=/bioinfo/local/build/bowtie2/bowtie2-2.2.5/
 SAMTOOLS=/bioinfo/local/build/samtools/samtools/bin/samtools
 CHECK_VARIANTS=/bioinfo/users/khillion/bin/clinTools/check_variants.py
 SNPSPLIT_GEN=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
@@ -22,47 +21,59 @@ SNPSPLIT_GEN=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
 # Local scripts
 #	Paths to the directory with the different scripts
 MAP_PATH=/bioinfo/users/khillion/GIT_dev/as-mapping/mapping_pipeline
-#   Get local scripts from the pipeline
-source LOCAL_SCRIPTS ${MAP_PATH}
 
  
 # ------------ Input(s) ------------
 
 # Files or Directories
 #   Path of the reads to map (either .fq or .fq.gz)
-FQ_READS="READS_PATH"
+FQ_READS_F=
+FQ_READS_R=
+#   full_vcf : latest VCF file downloaded from sanger
+FULL_VCF=/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf
+
 #   Full reference genome (fasta format)
-ref_geno="/data/annotations/Mouse/mm10/complete/mm10.fa"
+REF_GENO=/data/annotations/Mouse/mm10/complete/mm10.fa
+INDEX_REF=
 #   Directory containing every chromosomes of the reference genome at the fasta format
-#   
-ref_dir="/data/annotations/Mouse/mm10/chromosomes_clean/"
-#   full_vcf : vcf file containing all SNPs from either the two strains, 
-full_vcf="/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf"
+#   (Ensembl annotation)
+REF_DIR=/data/annotations/Mouse/mm10/chromosomes_clean/
 
-# Informations
-# 	Genotype names
-id_geno1="CAST_EiJ"
-id_geno2="129S1_SvImJ"
+# 	Strain specific informations
+# First genotype
+ID_GENO1=CAST_EiJ
+FASTA_GENO1=
+INDEX_GENO1=
+# Second genotype
+ID_GENO2=129S1_SvImJ
+FASTA_GENO2=
+INDEX_GENO2=
+# Diploid
+FASTA_DIP=
+INDEX_DIP=
 
+#   Selected strategies
+#   [1] to select the strategy
+MAP_REF=0
+MAP_N=0
+MAP_PAR=0
+MAP_DIP=0
 
 # ------------ Output(s) ------------
 
-# Output directories for files to be reused (N masked genome, indexes ...)
-main_out="/bioinfo/users/khillion/AS_proj/mapped_reads/data/"
+# Output directories for generated files to be reused (N masked genome, indexes ...)
+GEN_OUT=/bioinfo/users/khillion/AS_proj/mapped_reads/data
+#	Folders for different file type
+FASTA_OUT=${GEN_OUT}/fastas
+INDEXES=${FASTA_OUT}/indexes
+VCF_OUT=${GEN_OUT}/vcfs
 
 #	Output directory for BAM
-sam_out="MAPPED_OUTDIR"
-
-# OTHER CONFIG FILE ?
-#	Folders for different file type
-fasta_out=${main_out}"fastas/"
-vcf_out=${main_out}"vcfs/"
-#	Name of the folder containing bowtie2 indexes, MUST BE in the same folder as the .fa file (only specified folder name here)
-bowtie2_indexes="${fasta_out}bowtie2_indexes/"
+OUT_DIR=MAPPED_OUTDIR
 
 
 # ------------ Bowtie2 Options ------------
-
+BOWTIE2_DIR=/bioinfo/local/build/bowtie2/bowtie2-2.2.5/
 # -- Main options (non exhaustive list)
 #	-p 1   			#
 #	--reorder		#
@@ -76,3 +87,7 @@ B2_OPTIONS="--reorder -p 8 --sensitive"
 #	--rfg 5,3		# --rfg : sets the reference gap open and extend
 #	--score-min L,-0.6,-0.6	# --score-min : function for the minimum alignement score to be considered valid
 B2_SCORING_OPT=""
+
+
+# ------------ Default paths and local scripts ----------
+source LOCAL_SCRIPTS ${MAP_PATH}
