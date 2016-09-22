@@ -17,24 +17,25 @@ SAMTOOLS=/bioinfo/local/build/samtools/samtools/bin/samtools
 CHECK_VARIANTS=/bioinfo/users/khillion/bin/clinTools/check_variants.py
 SNPSPLIT_GEN=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
 
-
 # Local scripts
 #	Paths to the directory with the different scripts
-MAP_PATH=/bioinfo/users/khillion/GIT_dev/as-mapping/mapping_pipeline
-
+PIPELINE_PATH=/bioinfo/users/khillion/GIT_dev/as-mapping/mapping_pipeline
+#   Default paths and local scripts
+source ${PIPELINE_PATH}/LOCAL_SCRIPTS
  
 # ------------ Input(s) ------------
 
 # Files or Directories
 #   Path of the reads to map (either .fq or .fq.gz)
+#   Only fill up FQ_READS_F for single-end
 FQ_READS_F=
 FQ_READS_R=
-#   full_vcf : latest VCF file downloaded from sanger
+#   full_vcf : latest VCF file downloaded from Sanger
 FULL_VCF=/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf
 
 #   Full reference genome (fasta format)
 REF_GENO=/data/annotations/Mouse/mm10/complete/mm10.fa
-INDEX_REF=
+B2_INDEX_REF=
 #   Directory containing every chromosomes of the reference genome at the fasta format
 #   (Ensembl annotation)
 REF_DIR=/data/annotations/Mouse/mm10/chromosomes_clean/
@@ -43,14 +44,18 @@ REF_DIR=/data/annotations/Mouse/mm10/chromosomes_clean/
 # First genotype
 ID_GENO1=CAST_EiJ
 FASTA_GENO1=
-INDEX_GENO1=
+B2_INDEX_GENO1=
 # Second genotype
 ID_GENO2=129S1_SvImJ
 FASTA_GENO2=
-INDEX_GENO2=
+B2_INDEX_GENO2=
 # Diploid
 FASTA_DIP=
-INDEX_DIP=
+B2_INDEX_DIP=
+# N-masked
+FASTA_NMASK=
+B2_INDEX_NMASK=
+
 
 #   Selected strategies
 #   [1] to select the strategy
@@ -58,6 +63,11 @@ MAP_REF=0
 MAP_N=0
 MAP_PAR=0
 MAP_DIP=0
+
+#   Selected mapper
+#    [1] Bowtie2
+#    [2] Tophat (with Bowtie2)
+MAPPER=1
 
 # ------------ Output(s) ------------
 
@@ -72,22 +82,18 @@ VCF_OUT=${GEN_OUT}/vcfs
 OUT_DIR=MAPPED_OUTDIR
 
 
-# ------------ Bowtie2 Options ------------
-BOWTIE2_DIR=/bioinfo/local/build/bowtie2/bowtie2-2.2.5/
-# -- Main options (non exhaustive list)
-#	-p 1   			#
-#	--reorder		#
-#	--sensitive		#
-B2_OPTIONS="--reorder -p 8 --sensitive"
-
-# -- Scoring options (Current are default).
-#	--np 1			# --np : penalty for matching to an ambiguous character such as "N"
-#	--mp 6,2		# --mp MX,MN : maximum and minimum mismatch penalty
-#	--rdg 5,3		# --rdg : sets the read gap open and extend
-#	--rfg 5,3		# --rfg : sets the reference gap open and extend
-#	--score-min L,-0.6,-0.6	# --score-min : function for the minimum alignement score to be considered valid
-B2_SCORING_OPT=""
+# ------------ Bowtie2 Parameters ------------
+BOWTIE2_DIR=/bioinfo/local/build/bowtie2/bowtie2-2.2.5
+# -- Options (current are default)
+#	-p 1   			    # Number of threads to align reads
+#	--reorder		    # Keep same order as the fq file
+#	--sensitive	# Preset alignment options
+B2_OPT="--reorder -p 8 --very-sensitive"
 
 
-# ------------ Default paths and local scripts ----------
-source LOCAL_SCRIPTS ${MAP_PATH}
+# ------------ Tophat Parameters ------------
+TOPHAT_DIR=/bioinfo/local/build/tophat/tophat-2.1.0
+# -- Options
+TOPHAT_OPT=""
+# -- Bowtie2 specific options
+TOPHAT_B2_OPT="--b2-very-sensitive"
