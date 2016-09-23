@@ -9,14 +9,13 @@
 
 ## --- Modification by Kenzo-Hugo Hillion // last 08-10-2016 ---
 
-
 """
 Kenzo-Hugo Hillion 05-24-2016 :
 
 The script has been adapted to mark the Allelic status
 of reads mapped on the reference genome based on the presence
-
 of SNPs in every reads.
+
 The script goes through all the bases of every read and check if the
 position is contained in the dictionnary.
 

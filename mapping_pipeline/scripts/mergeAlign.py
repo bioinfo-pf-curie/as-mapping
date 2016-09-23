@@ -542,7 +542,7 @@ if __name__ == "__main__":
             if (mergedbam == None):
                 mergedbam = pysam.Samfile(outdir + outname + MERGED_BAM + ".bam", "wb", template=bam)
             # Get the name of the bam from which the alignments come from
-            origin = bam_name.split(".",1)[0]
+            origin = bam_name.split(".")[0].split('/')[-1]
             for alignment in bam.fetch(until_eof=True):
                 alignment.set_tag(PAR_TAG,origin)
                 mergedbam.write(alignment)

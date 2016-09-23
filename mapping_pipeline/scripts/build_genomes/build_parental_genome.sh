@@ -80,7 +80,7 @@ done
 mkdir -p ${OUT_DIR}/SNPsplit_reports
 mv ${STRAIN}_*report.txt ${OUT_DIR}/SNPsplit_reports
 # SNPs
-mv *_${STRAIN}_.gz ${OUT_DIR}
+mv *_${STRAIN}_*.gz ${OUT_DIR}
 # Delete files
 rm ${STRAIN}_specific_*.txt
 rm -r SNPs_${STRAIN} ${STRAIN}_full_sequence

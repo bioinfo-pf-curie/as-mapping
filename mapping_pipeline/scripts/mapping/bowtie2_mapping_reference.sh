@@ -48,10 +48,10 @@ ID_REF=${ID_REF%.fa}
 
 # -- Checking input parameters for mapping
 #  Indexes ?
-if [[ -z ${B2_INDEX_REF} ]]; then B2_INDEX_REF=${INDEXES}/${ID_REF}
+if [[ -z ${B2_INDEX_REF} ]]; then B2_INDEX_REF=${INDEXES}/${ID_REF};fi
 if [[ ! -e ${B2_INDEX_REF}.rev.2.bt2 ]]
 then
-	echo "$0: ERROR - Missing Bowtie2 indexes in ${INDEXES}. Exit." 1>&2
+	echo "$0: ERROR - Missing Bowtie2 indexes. Exit." 1>&2
     exit 1
 fi
 
@@ -61,7 +61,7 @@ then
 	echo "$0: ERROR - Missing FASTQ reads. Exit." 1>&2
     exit 1
 fi
-SINGLE_END = true
+SINGLE_END=true
 if [[ -e ${FQ_READS_R} ]]; then SINGLE_END = false;fi
 
 
@@ -69,10 +69,10 @@ if [[ -e ${FQ_READS_R} ]]; then SINGLE_END = false;fi
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}${ID_REF}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_REF}.bam
 else
     # Paired-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}${ID_REF}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_REF}.bam
 fi
 
 

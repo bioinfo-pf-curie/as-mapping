@@ -57,7 +57,7 @@ then
     echo "$0: ERROR - Missing FASTQ reads. Exit." 1>&2
     exit 1
 fi
-SINGLE_END = true
+SINGLE_END=true
 if [[ -e ${FQ_READS_R} ]]; then SINGLE_END = false;fi
 
 

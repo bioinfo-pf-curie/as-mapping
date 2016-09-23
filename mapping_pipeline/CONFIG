@@ -65,9 +65,9 @@ MAP_PAR=0
 MAP_DIP=0
 
 #   Selected mapper
-#    [1] Bowtie2
-#    [2] Tophat (with Bowtie2)
-MAPPER=1
+#    [1] BOWTIE2
+#    [2] TOPHAT (with Bowtie2)
+MAPPER=BOWTIE2
 
 # ------------ Output(s) ------------
 

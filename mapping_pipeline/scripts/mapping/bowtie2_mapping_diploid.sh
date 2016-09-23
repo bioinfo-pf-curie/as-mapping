@@ -2,8 +2,7 @@
 # Author(s) : Kenzo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
-#   Script to perform alignment to a N-masked genome using Bowtie2
-#   and filter for allele specific analysis
+#  		Script to perform alignment to a diploi genome
 
 #### Parameters #### --------------------------------------------------------------------
 
@@ -38,19 +37,20 @@ function usage {
 
 #### Main #### --------------------------------------------------------------------------
 
-## Set up output directory for this method of mapping in the main output directory
-BAM_OUT=${OUT_DIR}/mapping_N-masked
+# Set up output directory for this method of mapping in the main output directory
+BAM_OUT=${OUT_DIR}/mapping_diploid
 mkdir -p ${BAM_OUT}
-ID_NMASK=N-masked_${ID_GENO1}_${ID_GENO2}
+ID_DIP=${ID_GENO1}_${ID_GENO2}
 
 ## Checking input parameters for mapping
 #- Indexes ?
-if [[ -z ${B2_INDEX_NMASK} ]]; then B2_INDEX_NMASK=${INDEXES}/${ID_NMASK};fi
-if [[ ! -e ${B2_INDEX_NMASK}.rev.2.bt2 ]]
+if [[ -z ${B2_INDEX_DIP} ]]; then B2_INDEX_DIP=${INDEXES}/${ID_DIP};fi
+if [[ ! -e ${B2_INDEX_DIP}.rev.2.bt2l ]]
 then
-    echo "$0: ERROR - Missing Bowtie2 indexes. Exit." 1>&2
+    echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_DIP}. Exit." 1>&2
     exit 1
 fi
+
 #- Reads ?
 if [[ ! -e ${FQ_READS_F} ]]
 then
@@ -60,15 +60,21 @@ fi
 SINGLE_END=true
 if [[ -e ${FQ_READS_R} ]]; then SINGLE_END = false;fi
 
-
 ## Mapping
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_NMASK} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_NMASK}.bam
+    # - Mapping
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_DIP} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_DIP}.bam
+    # - Selection of best alignments
+    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_DIP}.bam -o ${BAM_OUT} -n ${ID_DIP}
 else
     # Paired-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_NMASK} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_NMASK}.bam
+    # - Mapping
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_DIP} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_DIP}.bam
+    # - Selection of best alignments
+    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_DIP}.bam -s 2 -o ${BAM_OUT} -n ${ID_DIP}
 fi
+
 
 exit 0

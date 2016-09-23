@@ -96,7 +96,7 @@ do
     mv *report.txt ${OUT_DIR}/SNPsplit_reports
     # Parental genomes
     mkdir -p ${OUT_DIR}/parental_genomes
-    mv *_${STRAIN}_*.gz ${STRAIN}.fa ${OUT_DIR}/parental_genomes
+    mv *_${STRAIN}_*.gz ${OUT_DIR}/${STRAIN}.fa ${OUT_DIR}/parental_genomes
     # Delete files
     rm -r SNPs_${STRAIN}/ ${STRAIN}_full_sequence
 done
