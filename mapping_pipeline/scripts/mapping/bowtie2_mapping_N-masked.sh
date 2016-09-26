@@ -42,6 +42,8 @@ function usage {
 BAM_OUT=${OUT_DIR}/mapping_N-masked
 mkdir -p ${BAM_OUT}
 ID_NMASK=N-masked_${ID_GENO1}_${ID_GENO2}
+# Name for the output bam file
+ID_OUTBAM=${OUT_NAME}_N-masked
 
 ## Checking input parameters for mapping
 #- Indexes ?
@@ -65,10 +67,10 @@ if [[ -e ${FQ_READS_R} ]]; then SINGLE_END = false;fi
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_NMASK} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_NMASK}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_NMASK} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
 else
     # Paired-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_NMASK} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_NMASK}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_NMASK} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
 fi
 
 exit 0

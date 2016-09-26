@@ -41,10 +41,11 @@ function usage {
 # Set up output directory for this method of mapping in the main output directory
 BAM_OUT=${OUT_DIR}/mapping_reference
 mkdir -p ${BAM_OUT}/
+# Name of the reference genome for indexes
+ID_REF=$(basename ${REF_GENO%.fa*})
+# Name for the output bam file
+ID_OUTBAM=${OUT_NAME}_reference
 
-# Get the name of the reference genome to use already existing indexes (might change this part to work directly on my own indexes)
-ID_REF=$(basename ${REF_GENO})
-ID_REF=${ID_REF%.fa}
 
 # -- Checking input parameters for mapping
 #  Indexes ?
@@ -62,17 +63,17 @@ then
     exit 1
 fi
 SINGLE_END=true
-if [[ -e ${FQ_READS_R} ]]; then SINGLE_END = false;fi
+if [[ -e ${FQ_READS_R} ]]; then SINGLE_END=false;fi
 
 
 # -- Mapping
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_REF}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
 else
     # Paired-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_REF}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
 fi
 
 

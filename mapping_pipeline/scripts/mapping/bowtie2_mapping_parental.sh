@@ -40,6 +40,8 @@ function usage {
 # Set up output directory for this method of mapping in the main output directory
 BAM_OUT=${OUT_DIR}/mapping_parental
 mkdir -p ${BAM_OUT}
+# Name for the output bam file
+ID_OUTBAM=${OUT_NAME}_parental
 
 ## Checking input parameters for mapping
 #- Indexes ?
@@ -72,16 +74,14 @@ then
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_GENO1} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_GENO1}.bam
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_GENO2} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_GENO2}.bam
     # - Selection of best alignments
-    ${PYTHON} ${MERGE_ALIGN} -p ${BAM_OUT}/${ID_GENO1}.bam -m ${BAM_OUT}/${ID_GENO2}.bam -o ${BAM_OUT} -n ${ID_GENO1}_${ID_GENO2}
+    ${PYTHON} ${MERGE_ALIGN} -p ${BAM_OUT}/${ID_GENO1}.bam -m ${BAM_OUT}/${ID_GENO2}.bam -o ${BAM_OUT} -n ${ID_OUTBAM}
 else
     # Paired-end mapping
     # - Mapping
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_GENO1} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_GENO1}.bam
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_GENO2} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_GENO2}.bam
     # - Selection of best alignments
-    ${PYTHON} ${MERGE_ALIGN} -p ${BAM_OUT}/${ID_GENO1}.bam -m ${BAM_OUT}/${ID_GENO2}.bam -s 2 -o ${BAM_OUT} -n ${ID_GENO1}_${ID_GENO2}
+    ${PYTHON} ${MERGE_ALIGN} -p ${BAM_OUT}/${ID_GENO1}.bam -m ${BAM_OUT}/${ID_GENO2}.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
 fi
-
-
 
 exit 0

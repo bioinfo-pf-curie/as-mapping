@@ -41,6 +41,8 @@ function usage {
 BAM_OUT=${OUT_DIR}/mapping_diploid
 mkdir -p ${BAM_OUT}
 ID_DIP=${ID_GENO1}_${ID_GENO2}
+# Name for the output bam file
+ID_OUTBAM=${OUT_NAME}_diploid
 
 ## Checking input parameters for mapping
 #- Indexes ?
@@ -65,15 +67,15 @@ if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     # - Mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_DIP} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_DIP}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_DIP} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     # - Selection of best alignments
-    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_DIP}.bam -o ${BAM_OUT} -n ${ID_DIP}
+    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_OUTBAM}.bam -o ${BAM_OUT} -n ${ID_OUTBAM}
 else
     # Paired-end mapping
     # - Mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_DIP} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_DIP}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_DIP} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     # - Selection of best alignments
-    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_DIP}.bam -s 2 -o ${BAM_OUT} -n ${ID_DIP}
+    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_OUTBAM}.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
 fi
 
 
