@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
@@ -40,7 +40,6 @@ function usage {
 # Set up output directory for this method of mapping in the main output directory
 BAM_OUT=${OUT_DIR}/mapping_parental_tophat
 mkdir -p ${BAM_OUT}
-
 # Name for the output bam file
 ID_OUTBAM=${OUT_NAME}_parental
 

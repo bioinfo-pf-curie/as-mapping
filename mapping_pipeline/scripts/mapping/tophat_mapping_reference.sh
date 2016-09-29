@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
@@ -50,7 +50,6 @@ ID_OUTBAM=${OUT_NAME}_reference
 # Checking input parameters for mapping
 #  Indexes ?
 if [[ -z ${B2_INDEX_REF} ]]; then B2_INDEX_REF=${INDEXES}/${ID_REF};fi
-
 if [[ ! -e ${B2_INDEX_REF}.rev.2.bt2 ]]
 then
 	echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_REF}. Exit." 1>&2

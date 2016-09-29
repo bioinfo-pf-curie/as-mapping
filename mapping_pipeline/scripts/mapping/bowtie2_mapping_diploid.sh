@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
-#  		Script to perform alignment to a diploi genome
+#  		Script to perform alignment to a diploid genome
 
 #### Parameters #### --------------------------------------------------------------------
 
@@ -67,13 +67,13 @@ if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     # - Mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_DIP} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -k 3 -x ${B2_INDEX_DIP} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     # - Selection of best alignments
     ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_OUTBAM}.bam -o ${BAM_OUT} -n ${ID_OUTBAM}
 else
     # Paired-end mapping
     # - Mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_DIP} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -k 3 -x ${B2_INDEX_DIP} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     # - Selection of best alignments
     ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_OUTBAM}.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
 fi

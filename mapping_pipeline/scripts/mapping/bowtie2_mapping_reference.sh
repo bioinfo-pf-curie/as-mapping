@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
@@ -41,11 +41,11 @@ function usage {
 # Set up output directory for this method of mapping in the main output directory
 BAM_OUT=${OUT_DIR}/mapping_reference_bowtie2
 mkdir -p ${BAM_OUT}/
+
 # Name of the reference genome for indexes
 ID_REF=$(basename ${REF_GENO%.fa*})
 # Name for the output bam file
 ID_OUTBAM=${OUT_NAME}_reference
-
 
 # -- Checking input parameters for mapping
 #  Indexes ?
@@ -55,7 +55,6 @@ then
 	echo "$0: ERROR - Missing Bowtie2 indexes. Exit." 1>&2
     exit 1
 fi
-
 #  Reads ?
 if [[ ! -e ${FQ_READS_F} ]]
 then
@@ -64,7 +63,6 @@ then
 fi
 SINGLE_END=true
 if [[ -e ${FQ_READS_R} ]]; then SINGLE_END=false;fi
-
 
 # -- Mapping
 if [[ $SINGLE_END == true ]]

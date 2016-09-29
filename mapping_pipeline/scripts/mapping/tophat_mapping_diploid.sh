@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
@@ -81,15 +81,15 @@ if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     # - Mapping
-    ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_DIP} ${FQ_READS_F}
+    ${TOPHAT_DIR}/tophat --report-secondary-alignments -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_DIP} ${FQ_READS_F}
     # - Selection of best alignments
     ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/tophat_out/accepted_hits.bam -o ${BAM_OUT} -n ${ID_OUTBAM}
 else
     # Paired-end mapping
-    ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_DIP} ${FQ_READS_F} ${FQ_READS_R}
+    ${TOPHAT_DIR}/tophat --report-secondary-alignments -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_DIP} ${FQ_READS_F} ${FQ_READS_R}
     # - Selection of best alignments
     # [WARNING] Not implemented yet in the script 
-    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/tophat_out/accepted_hits.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
+    # ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/tophat_out/accepted_hits.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
 fi
 
 
