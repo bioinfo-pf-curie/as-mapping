@@ -2,8 +2,7 @@
 # Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
-#   Script to map reads on reference genome using Tophat
-#   and filter for allele specific analysis
+#   Script to map reads on a diploid genome using Tophat
 
 #### Parameters #### --------------------------------------------------------------------
 
@@ -39,23 +38,21 @@ function usage {
 #### Main #### --------------------------------------------------------------------------
 
 # Set up output directory for this method of mapping in the main output directory
-BAM_OUT=${OUT_DIR}/mapping_reference_tophat
-mkdir -p ${BAM_OUT}/
-
-# Name of the reference genome for indexes
-ID_REF=$(basename ${REF_GENO%.fa*})
+BAM_OUT=${OUT_DIR}/mapping_diploid_tophat
+mkdir -p ${BAM_OUT}
+ID_DIP=${ID_GENO1}_${ID_GENO2}
 # Name for the output bam file
-ID_OUTBAM=${OUT_NAME}_reference
+ID_OUTBAM=${OUT_NAME}_diploid
 
 # Checking input parameters for mapping
 #  Indexes ?
-if [[ -z ${B2_INDEX_REF} ]]; then B2_INDEX_REF=${INDEXES}/${ID_REF};fi
-
-if [[ ! -e ${B2_INDEX_REF}.rev.2.bt2 ]]
+if [[ -z ${B2_INDEX_DIP} ]]; then B2_INDEX_DIP=${INDEXES}/${ID_DIP};fi
+if [[ ! -e ${B2_INDEX_DIP}.rev.2.bt2l ]]
 then
-	echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_REF}. Exit." 1>&2
+	echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_DIP}. Exit." 1>&2
     exit 1
 fi
+
 #  Reads ?
 if [[ ! -e ${FQ_READS_F} ]]
 then
@@ -83,13 +80,17 @@ fi
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
-    ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F}
+    # - Mapping
+    ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_DIP} ${FQ_READS_F}
+    # - Selection of best alignments
+    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/tophat_out/accepted_hits.bam -o ${BAM_OUT} -n ${ID_OUTBAM}
 else
     # Paired-end mapping
-    ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F} ${FQ_READS_R}
+    ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_DIP} ${FQ_READS_F} ${FQ_READS_R}
+    # - Selection of best alignments
+    # [WARNING] Not implemented yet in the script 
+    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/tophat_out/accepted_hits.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
 fi
 
-
-# Filter [TO BE DONE] using markAllelicStatus
 
 exit 0 

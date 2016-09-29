@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author(s) : Kenzo Hillion
+# Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
 #  		Script to perform alignment to parental genomes
@@ -38,7 +38,7 @@ function usage {
 #### Main #### --------------------------------------------------------------------------
 
 # Set up output directory for this method of mapping in the main output directory
-BAM_OUT=${OUT_DIR}/mapping_parental
+BAM_OUT=${OUT_DIR}/mapping_parental_bowtie2
 mkdir -p ${BAM_OUT}
 # Name for the output bam file
 ID_OUTBAM=${OUT_NAME}_parental
@@ -64,7 +64,7 @@ then
     exit 1
 fi
 SINGLE_END=true
-if [[ -e ${FQ_READS_R} ]]; then SINGLE_END = false;fi
+if [[ -e ${FQ_READS_R} ]]; then SINGLE_END=false;fi
 
 ## Mapping
 if [[ $SINGLE_END == true ]]

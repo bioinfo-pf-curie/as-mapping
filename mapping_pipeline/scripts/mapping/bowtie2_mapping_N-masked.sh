@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author(s) : Kenzo Hillion
+# Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
 #   Script to perform alignment to a N-masked genome using Bowtie2
@@ -39,7 +39,7 @@ function usage {
 #### Main #### --------------------------------------------------------------------------
 
 ## Set up output directory for this method of mapping in the main output directory
-BAM_OUT=${OUT_DIR}/mapping_N-masked
+BAM_OUT=${OUT_DIR}/mapping_N-masked_bowtie2
 mkdir -p ${BAM_OUT}
 ID_NMASK=N-masked_${ID_GENO1}_${ID_GENO2}
 # Name for the output bam file
@@ -60,7 +60,7 @@ then
     exit 1
 fi
 SINGLE_END=true
-if [[ -e ${FQ_READS_R} ]]; then SINGLE_END = false;fi
+if [[ -e ${FQ_READS_R} ]]; then SINGLE_END=false;fi
 
 
 ## Mapping

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author(s) : Kenzo Hillion
+# Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) :
 #   Script to map reads on reference genome using Bowtie2
@@ -39,7 +39,7 @@ function usage {
 #### Main #### --------------------------------------------------------------------------
 
 # Set up output directory for this method of mapping in the main output directory
-BAM_OUT=${OUT_DIR}/mapping_reference
+BAM_OUT=${OUT_DIR}/mapping_reference_bowtie2
 mkdir -p ${BAM_OUT}/
 # Name of the reference genome for indexes
 ID_REF=$(basename ${REF_GENO%.fa*})
@@ -77,6 +77,8 @@ else
 fi
 
 
-# -- Filter [TO BE DONE]
+# -- Filtering [TO BE DONE]
+
+#${MARKALLELICSTATUS} -i ${BAM_OUT}/${ID_OUTBAM}.bam 
 
 exit 0
