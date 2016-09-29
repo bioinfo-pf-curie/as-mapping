@@ -1,4 +1,3 @@
-
 ############################## CONFIG FILE ##################################
 
 # Author(s) : Kenzo Hillion
@@ -58,6 +57,7 @@ B2_INDEX_NMASK=
 
 
 #   Selected strategies
+#   [0] to skip the strategy
 #   [1] to select the strategy
 MAP_REF=0
 MAP_N=0
@@ -81,19 +81,21 @@ VCF_OUT=${GEN_OUT}/vcfs
 #	Output directory for BAM
 OUT_DIR=MAPPED_OUTDIR
 
+#   Name for the output bam
+OUT_NAME=MY_ANALYSIS
 
 # ------------ Bowtie2 Parameters ------------
 BOWTIE2_DIR=/bioinfo/local/build/bowtie2/bowtie2-2.2.5
-# -- Options (current are default)
-#	-p 1   			    # Number of threads to align reads
-#	--reorder		    # Keep same order as the fq file
-#	--sensitive	# Preset alignment options
+# -- Options
 B2_OPT="--reorder -p 8 --very-sensitive"
 
 
 # ------------ Tophat Parameters ------------
 TOPHAT_DIR=/bioinfo/local/build/tophat/tophat-2.1.0
+# -- Annotation file
+TOPHAT_GTF=
+TOPHAT_TRANSC_INDEX=
 # -- Options
-TOPHAT_OPT=""
+TOPHAT_OPT="-p 8 -g 1"
 # -- Bowtie2 specific options
 TOPHAT_B2_OPT="--b2-very-sensitive"
