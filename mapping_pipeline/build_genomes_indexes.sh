@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Author(s) : Kenzo Hillion
+# Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) : Build necessary files from a config file
 
