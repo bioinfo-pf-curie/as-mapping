@@ -99,7 +99,7 @@ else
     mv ${BAM_OUT}/tophat_out_${ID_GENO1}/accepted_hits.bam ${BAM_OUT}/tophat_out_${ID_GENO1}/${ID_GENO1}.bam
     mv ${BAM_OUT}/tophat_out_${ID_GENO2}/accepted_hits.bam ${BAM_OUT}/tophat_out_${ID_GENO2}/${ID_GENO2}.bam
     # - Selection of best alignments
-    ${PYTHON} ${MERGE_ALIGN} -p ${BAM_OUT}/tophat_out_${ID_GENO1}/${ID_GENO1}.bam -m ${BAM_OUT}/tophat_out_${ID_GENO2}/{$ID_GENO2}.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
+    ${PYTHON} ${MERGE_ALIGN} -p ${BAM_OUT}/tophat_out_${ID_GENO1}/${ID_GENO1}.bam -m ${BAM_OUT}/tophat_out_${ID_GENO2}/${ID_GENO2}.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
 fi
 
 
