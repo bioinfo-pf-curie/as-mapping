@@ -75,7 +75,8 @@ else
     # - Mapping
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -k 3 -x ${B2_INDEX_DIP} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     # - Selection of best alignments
-    ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_OUTBAM}.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
+    # [WARNING] Not implemented yet in the script
+    #${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_OUTBAM}.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}
 fi
 
 
