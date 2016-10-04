@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ## Nicolas Servant
 ## Create a masked index for alignment

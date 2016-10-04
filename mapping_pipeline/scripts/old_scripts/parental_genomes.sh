@@ -1,5 +1,5 @@
-#!/bin/bash
-# Author(s) : Kenzo Hillion
+#!/usr/bin/env bash
+# Author(s) : Kenzo-Hugo Hillion
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) : Script to reconstruct two parental genomes in fasta format from VCF files containing SNPs
 
