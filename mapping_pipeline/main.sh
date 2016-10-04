@@ -34,6 +34,7 @@ function usage {
 # Create output directory
 mkdir -p ${OUT_DIR}/
 # Run mapping strategies
+
 if [[ ${MAP_REF} -eq 1 ]]
 then
     if [[ ${MAPPER} == 'BOWTIE2' ]]
@@ -50,10 +51,10 @@ fi
 
 if [[ ${MAP_N} -eq 1 ]]
 then
-    if [[ ${MAPPER} -eq 'BOWTIE2' ]]
+    if [[ ${MAPPER} == 'BOWTIE2' ]]
     then
         ${MAPPING_NMASKED_B2} -c $CONFIG
-    elif [[ ${MAPPER} -eq 'TOPHAT' ]]
+    elif [[ ${MAPPER} == 'TOPHAT' ]]
     then
         ${MAPPING_NMASKED_TOPHAT} -c $CONFIG
     else
