@@ -6,12 +6,11 @@ See NEWS for information about changes in this and previous versions.
 
 ## What is it ?
 
-This pipeline was designed for the mappings of reads prior to allele specific analysis. Most of the described methods are present in the present pipeline.
+This pipeline was designed for the mapping of reads prior to allele specific analysis. Most of the described methods are present in the present pipeline (reference genome, parental genomes, diploid genome and N-masked genome).
 
 ## Contact
 
-For any question about the pipeline, please contact
-<kenzo.hillion@curie.fr>
+For any question about the pipeline, please contact <kenzo.hillion@curie.fr>.
 
 # Quick Start Guide
 
@@ -20,9 +19,8 @@ For any question about the pipeline, please contact
 The following dependancies are required :
 
 * [Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) (version 2.2.5)
-* [vcf2diploid](http://alleleseq.gersteinlab.org/home.html) (version 0.2.6a)
+* [SNPsplit](http://github.com/FelixKrueger/SNPsplit) (version 0.3)
 * [samtools](http://samtools.sourceforge.net) (version 1.1)
-* [clinTools](https://github.com/viv-1/clinTools)
  
 ## How to install it ?
 
@@ -36,7 +34,7 @@ make CONFIG_SYS=config-install.txt install
 
 ## CONFIG File
 
-The `CONFIG.sh` file contains all the informations and paths for a simulation.
+The `CONFIG` file contains all the informations and paths for a simulation.
 
 * The different path of the tools :
 
