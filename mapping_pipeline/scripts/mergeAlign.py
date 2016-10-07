@@ -33,6 +33,7 @@ from either mapping to both parental genomes or a diploid genome.
 ###########  Import  ###########
 
 import getopt
+import time
 import sys 
 import os
 import re
@@ -100,25 +101,29 @@ def get_args():
         sys.exit(-1)
     return opts
 
-def write_single_alignment(alignment,all_outbams):
+def write_single_alignment(alignment,all_outbams,counter_alignments):
     '''
     Write the alignment in the correct outbam file
 
     alignment: alignment [PYSAM object]
     all_outbams: all the different output BAM files [dict]
+    counter_alignments: counters for the report [dict]
     '''
     if alignment is None: # Case for paired-end where only one mate is mapped
         return
     elif (alignment.flag >= 512): # Failed quality checks or duplicate, consider unmapped
         if WRITE_UNMAPPED:
             all_outbams["unmapped"].write(alignment)
+        return
     elif ((alignment.flag >= 4) & (str(bin(alignment.flag))[-3] == '1')): # unmapped alignment -> 0b0100
         if WRITE_UNMAPPED:
             all_outbams["unmapped"].write(alignment)
+        return
     elif (alignment.get_tag(AS_TAG) != "CF"): # mapped alignment
         all_outbams["final"].write(alignment)
     elif WRITE_AMBI: # ambiguous alignment
         all_outbams["ambi"].write(alignment)
+    counter_alignments[alignment.get_tag(AS_TAG)] += 1
     return
 
 def calc_scores(list_alignments,comparison):
@@ -605,14 +610,19 @@ if __name__ == "__main__":
             unmapbam = pysam.Samfile(outdir + outname + UNMAPPED_BAM + ".bam", "wb", header=new_bam_header)
         all_outbams["unmapped"] = unmapbam
 
-    # Set up counters
-    counter_alignment = 0
+    # Set up counters for report
+    counter_alignments = {}
+    counter_alignments["treated"] = 0
+    counter_alignments["UA"] = 0
+    counter_alignments["G1"] = 0
+    counter_alignments["G2"] = 0
+    counter_alignments["CF"] = 0
 
     # Variables inititialization
     prev_alignments = []
  
     for alignment in sortedbam.fetch(until_eof=True):
-        counter_alignment += 1
+        counter_alignments["treated"] += 1
         if (mapping_diploid):
             rephase_alignment(alignment,chrom_ids)
         if (len(prev_alignments) == 0):
@@ -626,16 +636,16 @@ if __name__ == "__main__":
                     # Select best position
                     selected_alignment = comp_single_alignments(prev_alignments,comparison)
                     # Write alignment in output file
-                    write_single_alignment(selected_alignment,all_outbams)
+                    write_single_alignment(selected_alignment,all_outbams,counter_alignments)
                 elif (seq_type == 2): # Paired-end
                     selected_alignment = comp_paired_alignments(prev_alignments,comparison)
                     for al_pair in selected_alignment:
-                        write_single_alignment(al_pair,all_outbams)
+                        write_single_alignment(al_pair,all_outbams,counter_alignments)
                 prev_alignments = []
                 # Then we process the alignment as it is a first alignment
                 prev_alignments.append(alignment)
 
-        if (counter_alignment % 1000000 == 0):
+        if (counter_alignments["treated"] % 1000000 == 0):
             print ("Reads treated: " + str(counter_alignment))
 
     # Treat last stack of alignments
@@ -644,18 +654,58 @@ if __name__ == "__main__":
         if (seq_type == 1): # Single-end
             # Select best position
             selected_alignment = comp_single_alignments(prev_alignments,comparison)
-            if (mapping_diploid):
-                rephase_alignment(selected_alignment,chrom_ids)
             # Write alignment in output file
-            write_single_alignment(selected_alignment,all_outbams)
+            write_single_alignment(selected_alignment,all_outbams,counter_alignments)
         elif (seq_type == 2): # Paired-end
             selected_alignment = comp_paired_alignments(prev_alignments,comparison)
+            for al_pair in selected_alignment:
+                write_single_alignment(al_pair,all_outbams,counter_alignments)
 
-    print ("Total number of alignments: " + str(counter_alignment))
+    #print ("Total number of alignments: " + str(counter_alignments["treated"]))
 
     # Closing SAM/BAM files
     for key in all_outbams:
         all_outbams[key].close()
     sortedbam.close()
     
+    # Writing report
+
+    report = open(outdir + outname + "mergeAlignreport.txt",'w')
+    localtime = time.asctime( time.localtime(time.time()) )   
+ 
+    report.write("------------------------------------------------ \n")
+    report.write("| mergeAlign report - " + localtime + " | \n")
+    report.write("------------------------------------------------ \n\n")
+    report.write("Input parameters\n")
+    report.write("================\n")
+    if (mapping_parental): report.write("Mapping type:     \tParental\n")
+    if (mapping_diploid): report.write("Mapping type:\tDiploid\n")
+    if (mapping_parental): report.write("Paternal BAM (G1):\t" + paternal + "\n") 
+    if (mapping_parental): report.write("Maternal BAM (G2):\t" + maternal + "\n") 
+    if (mapping_diploid): report.write("Input BAM:\t" + diploid + "\n")
+    if (mapping_diploid):
+        for key in chrom_ids.keys():
+            if (chrom_ids[key] == "G1"): report.write(" |G1:\t" + key + "\n")
+    if (mapping_diploid):
+        for key in chrom_ids.keys():
+            if (chrom_ids[key] == "G2"): report.write(" |G2:\t" + key + "\n")
+    if (seq_type == 1): report.write("Single-end reads\n") 
+    if (seq_type == 2): report.write("Paired-end reads\n") 
+    if (comparison == 1): report.write("Comparison by Alignment Score (AS)\n") 
+    if (comparison == 2):report.write("Comparison by number of mismatch (NM)\n") 
+    report.write("Output files in " + outdir + "\n")
+    report.write(" |Selected alignments:\t" + outname + FINAL_BAM + ".bam\n")
+    if (WRITE_UNMAPPED): report.write(" |Unmapped reads:\t" + outname + UNMAPPED_BAM + ".bam\n") 
+    if (WRITE_AMBI): report.write(" |Ambiguous reads:   \t" + outname + AMBIGUOUS_BAM + ".bam\n\n") 
+    report.write("\nAllele specific selection report\n")
+    report.write("================================\n")
+    report.write("Treated alignments:                             \t" + str(counter_alignments["treated"]) + "\n")
+    report.write("Reads specific to G1:                           \t" + str(counter_alignments["G1"]) + "\n")
+    report.write("Reads specific to G2:                           \t" + str(counter_alignments["G2"]) + "\n")
+    report.write("Reads with no allelic information (UA):         \t" + str(counter_alignments["UA"]) + "\n")
+    report.write("Reads with conflicting allelic information (CF):\t" + str(counter_alignments["CF"]) + "\n")
+    report.write("Total number of reads:                          \t" + str(counter_alignments["G1"] + \
+                 counter_alignments["G2"] + counter_alignments["UA"] + counter_alignments["CF"]) + "\n")
+    
+
     os.remove(outdir + outname + NSORTED_BAM + ".bam")
