@@ -25,8 +25,6 @@ from either mapping to both parental genomes or a diploid genome.
         -XX:Z:G1 -> alignment is assigned to the first parental genome
         -XX:Z:G2 -> alignment is assigned to the second parental genome
         -XX:Z:CF -> alignment is ambiguous/conflictual
-    
-    USE :
 
 """
 
@@ -50,7 +48,7 @@ MERGED_BAM = TMP_ID + "_parental_merged"
 NSORTED_BAM = TMP_ID + "_nsort"
 
 # OUTPUT PARAMETERS/NAMES
-FINAL_BAM = "final"
+FINAL_BAM = "flagged"
 AMBIGUOUS_BAM = "ambiguous"
 UNMAPPED_BAM = "unmapped"
 
@@ -111,13 +109,16 @@ def write_single_alignment(alignment,all_outbams,counter_alignments):
     '''
     if alignment is None: # Case for paired-end where only one mate is mapped
         return
-    elif (alignment.flag >= 512): # Failed quality checks or duplicate, consider unmapped
+    counter_alignments["total"] += 1
+    if (alignment.flag >= 512): # Failed quality checks or duplicate, consider unmapped
         if WRITE_UNMAPPED:
             all_outbams["unmapped"].write(alignment)
+        counter_alignments["unmapped"] += 1
         return
     elif ((alignment.flag >= 4) & (str(bin(alignment.flag))[-3] == '1')): # unmapped alignment -> 0b0100
         if WRITE_UNMAPPED:
             all_outbams["unmapped"].write(alignment)
+        counter_alignments["unmapped"] += 1
         return
     elif (alignment.get_tag(AS_TAG) != "CF"): # mapped alignment
         all_outbams["final"].write(alignment)
@@ -613,10 +614,12 @@ if __name__ == "__main__":
     # Set up counters for report
     counter_alignments = {}
     counter_alignments["treated"] = 0
+    counter_alignments["unmapped"] = 0
     counter_alignments["UA"] = 0
     counter_alignments["G1"] = 0
     counter_alignments["G2"] = 0
     counter_alignments["CF"] = 0
+    counter_alignments["total"] = 0
 
     # Variables inititialization
     prev_alignments = []
@@ -646,7 +649,7 @@ if __name__ == "__main__":
                 prev_alignments.append(alignment)
 
         if (counter_alignments["treated"] % 1000000 == 0):
-            print ("Reads treated: " + str(counter_alignment))
+            print ("Reads treated: " + str(counter_alignments["treated"]))
 
     # Treat last stack of alignments
     if (len(prev_alignments) > 0):
@@ -694,18 +697,24 @@ if __name__ == "__main__":
     if (comparison == 1): report.write("Comparison by Alignment Score (AS)\n") 
     if (comparison == 2):report.write("Comparison by number of mismatch (NM)\n") 
     report.write("Output files in " + outdir + "\n")
-    report.write(" |Selected alignments:\t" + outname + FINAL_BAM + ".bam\n")
-    if (WRITE_UNMAPPED): report.write(" |Unmapped reads:\t" + outname + UNMAPPED_BAM + ".bam\n") 
-    if (WRITE_AMBI): report.write(" |Ambiguous reads:   \t" + outname + AMBIGUOUS_BAM + ".bam\n\n") 
+    report.write(" |Selected alignments (UA,G1,G2):\t" + outname + FINAL_BAM + ".bam\n")
+    if (WRITE_UNMAPPED): report.write(" |Unmapped reads:   \t" + outname + UNMAPPED_BAM + ".bam\n") 
+    if (WRITE_AMBI): report.write(" |Ambiguous reads(CF):  \t" + outname + AMBIGUOUS_BAM + ".bam\n\n") 
     report.write("\nAllele specific selection report\n")
     report.write("================================\n")
     report.write("Treated alignments:                             \t" + str(counter_alignments["treated"]) + "\n")
-    report.write("Reads specific to G1:                           \t" + str(counter_alignments["G1"]) + "\n")
-    report.write("Reads specific to G2:                           \t" + str(counter_alignments["G2"]) + "\n")
-    report.write("Reads with no allelic information (UA):         \t" + str(counter_alignments["UA"]) + "\n")
-    report.write("Reads with conflicting allelic information (CF):\t" + str(counter_alignments["CF"]) + "\n")
-    report.write("Total number of reads:                          \t" + str(counter_alignments["G1"] + \
-                 counter_alignments["G2"] + counter_alignments["UA"] + counter_alignments["CF"]) + "\n")
+    report.write("Reads specific to G1:                           \t" + str(counter_alignments["G1"]) + \
+      "\t(" + str(round(float(counter_alignments["G1"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Reads specific to G2:                           \t" + str(counter_alignments["G2"]) + \
+      "\t(" + str(round(float(counter_alignments["G2"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Reads with no allelic information (UA):         \t" + str(counter_alignments["UA"]) + \
+      "\t(" + str(round(float(counter_alignments["UA"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Reads with conflicting allelic information (CF):\t" + str(counter_alignments["CF"]) + \
+      "\t(" + str(round(float(counter_alignments["CF"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Reads unmapped:                                 \t" + str(counter_alignments["unmapped"]) + \
+      "\t(" + str(round(float(counter_alignments["unmapped"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Total number of reads:                          \t" + str(counter_alignments["total"]) + \
+      "\t(100%)\n")
     
 
     os.remove(outdir + outname + NSORTED_BAM + ".bam")
