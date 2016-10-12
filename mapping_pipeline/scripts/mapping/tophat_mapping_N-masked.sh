@@ -75,18 +75,28 @@ else
         exit 1
     fi  
 fi
+#- SNP file ?
+if [[ -z ${SNP_FILE} ]]; then SNP_FILE=${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt.gz;fi
+if [[ ! -e ${SNP_FILE} ]]
+then
+    echo "$0: WARNING - Missing SNP file for SNPsplit." 1>&2
+fi
 
 ## Mapping
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_NMASK} ${FQ_READS_F}
+    mv ${BAM_OUT}/tophat_out/accepted_hits.bam ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${SNPSPLIT} --samtools_path ${SAMTOOLS_DIR} --snp_file ${SNP_FILE} ${BAM_OUT}/${ID_OUTBAM}.bam
 else
     # Paired-end mapping
     ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_NMASK} ${FQ_READS_F} ${FQ_READS_R}
+    mv ${BAM_OUT}/tophat_out/accepted_hits.bam ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${SNPSPLIT} --paired --samtools_path ${SAMTOOLS_DIR} --snp_file ${SNP_FILE} ${BAM_OUT}/${ID_OUTBAM}.bam
 fi
 
-
-# Filter [TO BE DONE] using markAllelicStatus
+# Removing files
+rm ${BAM_OUT}/${ID_OUTBAM}.SNPsplit_sort.txt ${BAM_OUT}/${ID_OUTBAM}.genome*.bam ${BAM_OUT}/${ID_OUTBAM}.unassigned.bam ${BAM_OUT}/${ID_OUTBAM}.sortedByName.bam
 
 exit 0
