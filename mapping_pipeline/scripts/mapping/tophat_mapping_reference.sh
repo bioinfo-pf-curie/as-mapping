@@ -63,7 +63,13 @@ then
 fi
 SINGLE_END=true
 if [[ -e ${FQ_READS_R} ]]; then SINGLE_END=false;fi
-
+#  SNP file ?
+if [[ -z ${SNP_FILE} ]]; then SNP_FILE=${FASTA_OUT}/all_SNPs_${PATERNAL}_${MATERNAL}.txt.gz;fi
+if [[ ! -e ${SNP_FILE} ]]
+then
+    echo "$0: ERROR - Missing SNP file for markAllelicStatus." 1>&2
+    exit 1
+fi
 #  Tophat annotation ?
 if [[ -e ${TOPHAT_TRANSC_INDEX} ]]
 then
@@ -83,9 +89,11 @@ if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F}
+    ${MARKALLELICSTATUS} -r -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 else
     # Paired-end mapping
     ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F} ${FQ_READS_R}
+    ${MARKALLELICSTATUS} -r --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 fi
 
 

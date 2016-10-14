@@ -63,20 +63,24 @@ then
 fi
 SINGLE_END=true
 if [[ -e ${FQ_READS_R} ]]; then SINGLE_END=false;fi
+#  SNP file ?
+if [[ -z ${SNP_FILE} ]]; then SNP_FILE=${FASTA_OUT}/all_SNPs_${PATERNAL}_${MATERNAL}.txt.gz;fi
+if [[ ! -e ${SNP_FILE} ]]
+then
+    echo "$0: ERROR - Missing SNP file for markAllelicStatus." 1>&2
+    exit 1
+fi
 
 # -- Mapping
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${MARKALLELICSTATUS} -r -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 else
     # Paired-end mapping
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${MARKALLELICSTATUS} -r --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 fi
-
-
-# -- Filtering [TO BE DONE]
-
-#${MARKALLELICSTATUS} -i ${BAM_OUT}/${ID_OUTBAM}.bam 
 
 exit 0
