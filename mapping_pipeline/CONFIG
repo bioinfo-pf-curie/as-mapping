@@ -37,7 +37,7 @@ REF_GENO=/data/annotations/Mouse/mm10/complete/mm10.fa
 B2_INDEX_REF=
 #   Directory containing every chromosomes of the reference genome at the fasta format
 #   (Ensembl annotation)
-REF_DIR=/data/annotations/Mouse/mm10/chromosomes_clean/
+REF_DIR=/data/annotations/Mouse/mm10/chromosomes_Ensembl/
 
 # 	Strain specific informations
 # First genotype
@@ -54,7 +54,8 @@ B2_INDEX_DIP=
 # N-masked
 FASTA_NMASK=
 B2_INDEX_NMASK=
-
+# SNP file
+SNP_FILE=
 
 #   Selected strategies
 #   [0] to skip the strategy

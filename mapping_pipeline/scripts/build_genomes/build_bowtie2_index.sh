@@ -43,5 +43,5 @@ function usage {
 mkdir -p $OUTDIR
 
 NAME=$(basename ${FASTA%.*})
-
+echo "$0: Building Bowtie2 indexes for ${NAME} in ${OUTDIR}"
 ${B2_BUILD_IND} -f ${FASTA} ${OUTDIR}/${NAME}

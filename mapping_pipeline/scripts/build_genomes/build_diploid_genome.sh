@@ -69,11 +69,11 @@ mkdir -p $OUT_DIR
 
 FASTA_DIPLOID=${PATERNAL}_${MATERNAL}.fa && rm -f ${OUT_DIR}/${FASTA_DIPLOID}
 
+echo "$0: Generating Diploid genome for ${PATERNAL} and ${MATERNAL} in ${OUT_DIR}"
+
 for STRAIN in $PATERNAL $MATERNAL
 do
     # -- SNPsplit
-    echo "Generating parental genome of ${STRAIN} ..."
-    echo "in $OUT_DIR"
     ${SNPSPLIT_GEN} --strain ${STRAIN} --reference_genome ${REF_DIR} --vcf_file ${VCF} --no_nmasking
         
     # -- Concatenation in parental genome
@@ -91,12 +91,13 @@ do
     awk -v STRAIN=${STRAIN}  '{if ($1 ~ /^>/) print $1"_"STRAIN; else print}' ${OUT_DIR}/${STRAIN}.fa >> ${OUT_DIR}/${FASTA_DIPLOID}
 
     # Save and delete files
+    # SNP
+    mv *_${GENO}_*.gz ${OUT_DIR}
     # Reports
     mkdir -p ${OUT_DIR}/SNPsplit_reports
     mv *report.txt ${OUT_DIR}/SNPsplit_reports
-    # Parental genomes
-    mkdir -p ${OUT_DIR}/parental_genomes
-    mv *_${STRAIN}_*.gz ${OUT_DIR}/${STRAIN}.fa ${OUT_DIR}/parental_genomes
     # Delete files
     rm -r SNPs_${STRAIN}/ ${STRAIN}_full_sequence
 done
+
+exit 0
