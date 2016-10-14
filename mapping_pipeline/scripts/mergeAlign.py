@@ -11,7 +11,7 @@
 ## Script description: Merging alignments (BAM) from mapping to either parental genomes
 ## (single or paired-end) or diploid genome (single-end only).
 
-scriptVersion = '1.0 - 09-16-2016'
+scriptVersion = '1.1 - 10-06-2016'
 
 """
 Script to select alignments based on alignment score ("AS:i") or number of mistmatches ("NM:i")
@@ -21,17 +21,17 @@ from either mapping to both parental genomes or a diploid genome.
         BAM files of mapped alignments sorted by name
     OUTPUT(s) :
         BAM file of selected alignments with a new flag added :
-        -XL:i:0 -> alignment is not assigned to any parental genome
-        -XL:i:1 -> alignment is assigned to one parental genome
-        -XL:i:2 -> alignment is ambiguous
-    
-    USE :
+        -XX:Z:UA -> alignment is not assigned to any parental genome
+        -XX:Z:G1 -> alignment is assigned to the first parental genome
+        -XX:Z:G2 -> alignment is assigned to the second parental genome
+        -XX:Z:CF -> alignment is ambiguous/conflictual
 
 """
 
 ###########  Import  ###########
 
 import getopt
+import time
 import sys 
 import os
 import re
@@ -48,14 +48,13 @@ MERGED_BAM = TMP_ID + "_parental_merged"
 NSORTED_BAM = TMP_ID + "_nsort"
 
 # OUTPUT PARAMETERS/NAMES
-FINAL_BAM = "final"
+FINAL_BAM = "flagged"
 AMBIGUOUS_BAM = "ambiguous"
 UNMAPPED_BAM = "unmapped"
 
 # GLOBAL VARIABLES
-global AS_TAG,PAR_TAG,WRITE_AMBI,WRITE_UNMAPPED
-AS_TAG = "XL"
-PAR_TAG = "XP"
+global AS_TAG,WRITE_AMBI,WRITE_UNMAPPED
+AS_TAG = "XX"
 WRITE_AMBI = False
 WRITE_UNMAPPED = False   
 
@@ -100,25 +99,32 @@ def get_args():
         sys.exit(-1)
     return opts
 
-def write_single_alignment(alignment,all_outbams):
+def write_single_alignment(alignment,all_outbams,counter_alignments):
     '''
     Write the alignment in the correct outbam file
 
     alignment: alignment [PYSAM object]
     all_outbams: all the different output BAM files [dict]
+    counter_alignments: counters for the report [dict]
     '''
     if alignment is None: # Case for paired-end where only one mate is mapped
         return
-    elif (alignment.flag >= 512): # Failed quality checks or duplicate, consider unmapped
+    counter_alignments["total"] += 1
+    if (alignment.flag >= 512): # Failed quality checks or duplicate, consider unmapped
         if WRITE_UNMAPPED:
             all_outbams["unmapped"].write(alignment)
+        counter_alignments["unmapped"] += 1
+        return
     elif ((alignment.flag >= 4) & (str(bin(alignment.flag))[-3] == '1')): # unmapped alignment -> 0b0100
         if WRITE_UNMAPPED:
             all_outbams["unmapped"].write(alignment)
-    elif (alignment.get_tag(AS_TAG) != 2): # mapped alignment
+        counter_alignments["unmapped"] += 1
+        return
+    elif (alignment.get_tag(AS_TAG) != "CF"): # mapped alignment
         all_outbams["final"].write(alignment)
     elif WRITE_AMBI: # ambiguous alignment
         all_outbams["ambi"].write(alignment)
+    counter_alignments[alignment.get_tag(AS_TAG)] += 1
     return
 
 def calc_scores(list_alignments,comparison):
@@ -163,24 +169,24 @@ def comp_two_single_alignments(list_alignments,scores):
  
     # If both alignments unmapped
     if ((scores[0] == 1000) & (scores[1] == 1000)):
-        alignment1.set_tag(AS_TAG,0)
+        alignment1.set_tag(AS_TAG,"UA")
         return alignment1
 
     # Reads mapped at the same position on the genome
     if (scores[0] < scores[1]): # Best score from parent 1
-        alignment1.set_tag(AS_TAG,1)
+        #alignment1.set_tag(AS_TAG,1)
         return alignment1
     elif (scores[0] > scores[1]): # Best score from parent 2
-        alignment2.set_tag(AS_TAG,1)
+        #alignment2.set_tag(AS_TAG,1)
         return alignment2
     else: # Same score
         if ((alignment1.pos == alignment2.pos) & (alignment1.rname == alignment2.rname)):
             # No allelic information on this read
-            alignment1.set_tag(AS_TAG,0)
+            alignment1.set_tag(AS_TAG,"UA")
             return alignment1
         else:
-            # Ambiguous case
-            alignment1.set_tag(AS_TAG,2)
+            # Ambiguous/Conflictual case
+            alignment1.set_tag(AS_TAG,"CF")
             return alignment1 
 
 def comp_three_single_alignments(list_alignments,scores):
@@ -197,7 +203,7 @@ def comp_three_single_alignments(list_alignments,scores):
     
     if (max(scores) == min(scores)): # Ambiguous case : at least 2 positions with same score
         alignment = list_alignments[0]
-        alignment.set_tag(AS_TAG,2)
+        alignment.set_tag(AS_TAG,"CF")
         return alignment
     else:
         # Get first minimum score
@@ -229,9 +235,9 @@ def comp_single_alignments(list_alignments,comparison):
     else:
         alignment = list_alignments[0]
         if ((alignment.flag >= 4) & (str(bin(alignment.flag))[-3] == '1')):
-            alignment.set_tag(AS_TAG,0)
-        else:
-            alignment.set_tag(AS_TAG,1)
+            alignment.set_tag(AS_TAG,"UA")
+        #else:
+        #    alignment.set_tag(AS_TAG,1)
     return alignment
 
 def init_pair(pairs,tag):
@@ -239,7 +245,7 @@ def init_pair(pairs,tag):
     function to initialize a dict entry
 
     pairs: all alignments pairs for a pair of read [dict]
-    tag: genotype of origin of alignment stored in PAR_TAG [string]
+    tag: genotype of origin of alignment stored in AS_TAG [string]
     '''
     pairs[tag] = {}
     pairs[tag]["R1"] = None
@@ -258,10 +264,10 @@ def reformat_pairs(list_alignments,scores):
     WARNING: strategy only working for parental mapping so far...
 
     RETURN: dictionary of position [dict]:
-      [PAR_TAG] --->  ["R1"] ---> First in pair alignment (Def: None)
-                      ["R2"] ---> Second in pair alignment (Def: None)
-                      ["score"] ---> Addition of both scores for comparison
-                      ["mapped"] ---> how many mapped from the pair
+      [AS_TAG] --->  ["R1"] ---> First in pair alignment (Def: None)
+                     ["R2"] ---> Second in pair alignment (Def: None)
+                     ["score"] ---> Addition of both scores for comparison
+                     ["mapped"] ---> how many mapped from the pair
     '''
     pairs = {}
     for i in range(0,len(list_alignments)):
@@ -272,39 +278,40 @@ def reformat_pairs(list_alignments,scores):
         # First or second in pair ? 
         if ((alignment.flag >= 128) & (str(bin(alignment.flag))[-8] == '1')):
             # This is the second in pair
-            if not (alignment.get_tag(PAR_TAG) in pairs.keys()):
-                pairs = init_pair(pairs,alignment.get_tag(PAR_TAG))
-            pairs[alignment.get_tag(PAR_TAG)]["R2"] = alignment
+            if not (alignment.get_tag(AS_TAG) in pairs.keys()):
+                pairs = init_pair(pairs,alignment.get_tag(AS_TAG))
+            pairs[alignment.get_tag(AS_TAG)]["R2"] = alignment
         elif ((alignment.flag >= 64) & (str(bin(alignment.flag))[-7] == '1')):
             # This is the first in pair
-            if not (alignment.get_tag(PAR_TAG) in pairs.keys()):
-                pairs = init_pair(pairs,alignment.get_tag(PAR_TAG))
-            pairs[alignment.get_tag(PAR_TAG)]["R1"] = alignment
+            if not (alignment.get_tag(AS_TAG) in pairs.keys()):
+                pairs = init_pair(pairs,alignment.get_tag(AS_TAG))
+            pairs[alignment.get_tag(AS_TAG)]["R1"] = alignment
         else:
             # Flag < 64 read not paired
             sys.stderr.write("WARNING: " + alignment.qname + " is not paired. Skipped")
             continue
 
         # Increase score and mapped counter
-        pairs[alignment.get_tag(PAR_TAG)]["score"] += score
+        pairs[alignment.get_tag(AS_TAG)]["score"] += score
         if not (str(bin(alignment.flag))[-3] == '1'):
-            pairs[alignment.get_tag(PAR_TAG)]["mapped"] += 1
+            pairs[alignment.get_tag(AS_TAG)]["mapped"] += 1
     return pairs
 
 def tag_selected_pair(pair,tag):
     '''
     Function that tags a selected pair of alignment
-      0 if not mapped
-      1 if mapped, meaning that it has allelic information
+      "UA" if not mapped
+      "G1" if corresponds to first genotype
+      "G2" if corresponds to second genotype
 
     pair: list alignments for the pair [list] of size 2
-    tag: tag to assign [int]
+    tag: tag to assign [string]
     '''
     for alignment in pair:
         if alignment is not None:
             if ((alignment.flag >= 4) & (str(bin(alignment.flag))[-3] == '1')):
                 # Read not mapped
-                alignment.set_tag(AS_TAG,0)
+                alignment.set_tag(AS_TAG,"UA")
             else:
                 alignment.set_tag(AS_TAG,tag)
     return pair
@@ -322,23 +329,23 @@ def comp_two_paired_alignments(dict_pair):
         # more reads aligned in genos[0] VS genos[1]
         # Keep alignments from genos[0]
         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-        tag_selected_pair(pair,1)
+        #tag_selected_pair(pair,1)
     elif (dict_pair[genos[0]]["mapped"] < dict_pair[genos[1]]["mapped"]):
         # less reads aligned in genos[0] VS genos[1]
         # Keep alignments from genos[1]
         pair = [dict_pair[genos[1]]["R1"],dict_pair[genos[1]]["R2"]]
-        tag_selected_pair(pair,1)
+        #tag_selected_pair(pair,1)
     else:
         # Same number of reads mapped in both genotypes (either 1 or 2)
         # Need to compare both pairs on scores
         if (dict_pair[genos[0]]["score"] < dict_pair[genos[1]]["score"]):
             # Score better for genos[0]
             pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-            tag_selected_pair(pair,1)
+            #tag_selected_pair(pair,1)
         elif (dict_pair[genos[0]]["score"] > dict_pair[genos[1]]["score"]):
             # Score better for genos[1]
             pair = [dict_pair[genos[1]]["R1"],dict_pair[genos[1]]["R2"]]
-            tag_selected_pair(pair,1)
+            #tag_selected_pair(pair,1)
         else:
             # Both pairs have the same score
             if (dict_pair[genos[0]]["mapped"] == 2):
@@ -348,11 +355,11 @@ def comp_two_paired_alignments(dict_pair):
                 (dict_pair[genos[0]]["R1"].pnext == dict_pair[genos[1]]["R1"].pnext)):
                     # Same positions for both pairs
                     pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                    tag_selected_pair(pair,0)
+                    tag_selected_pair(pair,"UA")
                 else:
                     # Ambiguous case, different positions with same score
                     pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                    tag_selected_pair(pair,2)
+                    tag_selected_pair(pair,"CF")
             else:
                 # Only one read has been mapped in both case
                 if ((dict_pair[genos[0]]["R1"] is not None) & (dict_pair[genos[1]]["R1"] is not None)):
@@ -361,26 +368,26 @@ def comp_two_paired_alignments(dict_pair):
                     (dict_pair[genos[0]]["R1"].rname == dict_pair[genos[1]]["R1"].rname)):
                         # Same positions for both reads
                         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                        tag_selected_pair(pair,0)
+                        tag_selected_pair(pair,"UA")
                     else:
                         # Ambiguous case, different positions with same score
                         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                        tag_selected_pair(pair,2)
+                        tag_selected_pair(pair,"CF")
                 elif ((dict_pair[genos[0]]["R2"] is not None) & (dict_pair[genos[1]]["R2"] is not None)):
                     # R2 mapped for both
                     if ((dict_pair[genos[0]]["R2"].pos == dict_pair[genos[1]]["R2"].pos) & \
                     (dict_pair[genos[0]]["R2"].rname == dict_pair[genos[1]]["R2"].rname)):
                         # Same positions for both reads
                         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                        tag_selected_pair(pair,0)
+                        tag_selected_pair(pair,"UA")
                     else:
                         # Ambiguous case, different positions with same score
                         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                        tag_selected_pair(pair,2)
+                        tag_selected_pair(pair,"CF")
                 else:
                     # Ambiguous cases
                     pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                    tag_selected_pair(pair,2)
+                    tag_selected_pair(pair,"CF")
     return pair
 
 def comp_three_paired_alignments(dict_pair):
@@ -415,7 +422,7 @@ def comp_paired_alignments(list_alignments,comparison):
     elif (len(dict_pair) > 0):
     # Alignments only from one parent
         pair = [dict_pair[dict_pair.keys()[0]]["R1"],dict_pair[dict_pair.keys()[0]]["R2"]]
-        tag_selected_pair(pair,1)
+        #tag_selected_pair(pair,1)
     else:
     # No pair recorded
         pair = [None,None]
@@ -434,8 +441,14 @@ def create_header(header):
     chrom_ids = {} # IDs of chromosomes to be return
     new_sq_header = [] # new header to replace old one
     cpt = 0
+    genotype_nb = 1
     for ref in header['SQ']:
         chrom = ref['SN'].split("_",1)[0]
+        genotype = ref['SN'].split("_",1)[1]
+        # Add the genotype in the dictionnary
+        if not genotype in chrom_ids.keys():
+            chrom_ids[genotype] = "G" + str(genotype_nb)
+            genotype_nb += 1
         # Skip if chromosome already exists
         if chrom in chrom_ids.keys():
             continue
@@ -456,7 +469,7 @@ def rephase_alignment(alignment,chrom_ids):
     '''
     Change reference_id of the alignment to the new corresponding one
     from a diploid mapping BAM file
-      Also add the information in PAR_TAG
+      Also add the information in AS_TAG
       from which genotype the alignment comes from
 
     alignment: alignment [PYSAM object]
@@ -464,11 +477,12 @@ def rephase_alignment(alignment,chrom_ids):
     '''
     # Check if read unmapped, just skip
     if ((alignment.flag >= 4) & (str(bin(alignment.flag))[-3] == '1')):
+        alignment.set_tag(AS_TAG,"UA")
         return
     # Get the name of the chromosome
     chrom_id = chrom_ids[alignment.reference_name.split("_",1)[0]]
-    # Save origin of the chromosome in PAR_TAG tag
-    alignment.set_tag(PAR_TAG,alignment.reference_name.split("_",1)[1])
+    # Save origin of the chromosome in AS_TAG tag
+    alignment.set_tag(AS_TAG,chrom_ids[alignment.reference_name.split("_",1)[1]])
     # Replace with the new ID corresponding to output header
     alignment.reference_id = chrom_id
     return
@@ -536,18 +550,20 @@ if __name__ == "__main__":
     if (mapping_parental):
         # Merge BAM files
         mergedbam = None
+        genotype = 1
         for bam_name in paternal,maternal:
             bam = pysam.Samfile(bam_name, "rb")
             # Output merged file
             if (mergedbam == None):
                 mergedbam = pysam.Samfile(outdir + outname + MERGED_BAM + ".bam", "wb", template=bam)
             # Get the name of the bam from which the alignments come from
-            origin = bam_name.split(".")[0].split('/')[-1]
+            #origin = bam_name.split(".")[0].split('/')[-1]
             for alignment in bam.fetch(until_eof=True):
-                alignment.set_tag(PAR_TAG,origin)
+                alignment.set_tag(AS_TAG,"G"+str(genotype))
                 mergedbam.write(alignment)
             # Closing BAM file
             bam.close()
+            genotype += 1
         # Closing merged BAM
         mergedbam.close()
 
@@ -595,14 +611,21 @@ if __name__ == "__main__":
             unmapbam = pysam.Samfile(outdir + outname + UNMAPPED_BAM + ".bam", "wb", header=new_bam_header)
         all_outbams["unmapped"] = unmapbam
 
-    # Set up counters
-    counter_alignment = 0
+    # Set up counters for report
+    counter_alignments = {}
+    counter_alignments["treated"] = 0
+    counter_alignments["unmapped"] = 0
+    counter_alignments["UA"] = 0
+    counter_alignments["G1"] = 0
+    counter_alignments["G2"] = 0
+    counter_alignments["CF"] = 0
+    counter_alignments["total"] = 0
 
     # Variables inititialization
     prev_alignments = []
  
     for alignment in sortedbam.fetch(until_eof=True):
-        counter_alignment += 1
+        counter_alignments["treated"] += 1
         if (mapping_diploid):
             rephase_alignment(alignment,chrom_ids)
         if (len(prev_alignments) == 0):
@@ -616,17 +639,17 @@ if __name__ == "__main__":
                     # Select best position
                     selected_alignment = comp_single_alignments(prev_alignments,comparison)
                     # Write alignment in output file
-                    write_single_alignment(selected_alignment,all_outbams)
+                    write_single_alignment(selected_alignment,all_outbams,counter_alignments)
                 elif (seq_type == 2): # Paired-end
                     selected_alignment = comp_paired_alignments(prev_alignments,comparison)
                     for al_pair in selected_alignment:
-                        write_single_alignment(al_pair,all_outbams)
+                        write_single_alignment(al_pair,all_outbams,counter_alignments)
                 prev_alignments = []
                 # Then we process the alignment as it is a first alignment
                 prev_alignments.append(alignment)
 
-        if (counter_alignment % 1000000 == 0):
-            print ("Reads treated: " + str(counter_alignment))
+        if (counter_alignments["treated"] % 1000000 == 0):
+            print ("Reads treated: " + str(counter_alignments["treated"]))
 
     # Treat last stack of alignments
     if (len(prev_alignments) > 0):
@@ -634,18 +657,64 @@ if __name__ == "__main__":
         if (seq_type == 1): # Single-end
             # Select best position
             selected_alignment = comp_single_alignments(prev_alignments,comparison)
-            if (mapping_diploid):
-                rephase_alignment(selected_alignment,chrom_ids)
             # Write alignment in output file
-            write_single_alignment(selected_alignment,all_outbams)
+            write_single_alignment(selected_alignment,all_outbams,counter_alignments)
         elif (seq_type == 2): # Paired-end
             selected_alignment = comp_paired_alignments(prev_alignments,comparison)
+            for al_pair in selected_alignment:
+                write_single_alignment(al_pair,all_outbams,counter_alignments)
 
-    print ("Total number of alignments: " + str(counter_alignment))
+    #print ("Total number of alignments: " + str(counter_alignments["treated"]))
 
     # Closing SAM/BAM files
     for key in all_outbams:
         all_outbams[key].close()
     sortedbam.close()
     
+    # Writing report
+
+    report = open(outdir + outname + "mergeAlignreport.txt",'w')
+    localtime = time.asctime( time.localtime(time.time()) )   
+ 
+    report.write("------------------------------------------------ \n")
+    report.write("| mergeAlign report - " + localtime + " | \n")
+    report.write("------------------------------------------------ \n\n")
+    report.write("Input parameters\n")
+    report.write("================\n")
+    if (mapping_parental): report.write("Mapping type:     \tParental\n")
+    if (mapping_diploid): report.write("Mapping type:\tDiploid\n")
+    if (mapping_parental): report.write("Paternal BAM (G1):\t" + paternal + "\n") 
+    if (mapping_parental): report.write("Maternal BAM (G2):\t" + maternal + "\n") 
+    if (mapping_diploid): report.write("Input BAM:\t" + diploid + "\n")
+    if (mapping_diploid):
+        for key in chrom_ids.keys():
+            if (chrom_ids[key] == "G1"): report.write(" |G1:\t" + key + "\n")
+    if (mapping_diploid):
+        for key in chrom_ids.keys():
+            if (chrom_ids[key] == "G2"): report.write(" |G2:\t" + key + "\n")
+    if (seq_type == 1): report.write("Single-end reads\n") 
+    if (seq_type == 2): report.write("Paired-end reads\n") 
+    if (comparison == 1): report.write("Comparison by Alignment Score (AS)\n") 
+    if (comparison == 2):report.write("Comparison by number of mismatch (NM)\n") 
+    report.write("Output files in " + outdir + "\n")
+    report.write(" |Selected alignments (UA,G1,G2):\t" + outname + FINAL_BAM + ".bam\n")
+    if (WRITE_UNMAPPED): report.write(" |Unmapped reads:   \t" + outname + UNMAPPED_BAM + ".bam\n") 
+    if (WRITE_AMBI): report.write(" |Ambiguous reads(CF):  \t" + outname + AMBIGUOUS_BAM + ".bam\n\n") 
+    report.write("\nAllele specific selection report\n")
+    report.write("================================\n")
+    report.write("Treated alignments:                             \t" + str(counter_alignments["treated"]) + "\n")
+    report.write("Reads specific to G1:                           \t" + str(counter_alignments["G1"]) + \
+      "\t(" + str(round(float(counter_alignments["G1"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Reads specific to G2:                           \t" + str(counter_alignments["G2"]) + \
+      "\t(" + str(round(float(counter_alignments["G2"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Reads with no allelic information (UA):         \t" + str(counter_alignments["UA"]) + \
+      "\t(" + str(round(float(counter_alignments["UA"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Reads with conflicting allelic information (CF):\t" + str(counter_alignments["CF"]) + \
+      "\t(" + str(round(float(counter_alignments["CF"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Reads unmapped:                                 \t" + str(counter_alignments["unmapped"]) + \
+      "\t(" + str(round(float(counter_alignments["unmapped"])/counter_alignments["total"]*100,3)) + "%)\n")
+    report.write("Total number of reads:                          \t" + str(counter_alignments["total"]) + \
+      "\t(100%)\n")
+    
+
     os.remove(outdir + outname + NSORTED_BAM + ".bam")

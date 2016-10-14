@@ -61,16 +61,26 @@ then
 fi
 SINGLE_END=true
 if [[ -e ${FQ_READS_R} ]]; then SINGLE_END=false;fi
-
+#- SNP file ?
+if [[ -z ${SNP_FILE} ]]; then SNP_FILE=${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt.gz;fi
+if [[ ! -e ${SNP_FILE} ]]
+then
+    echo "$0: WARNING - Missing SNP file for SNPsplit." 1>&2
+fi
 
 ## Mapping
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_NMASK} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${SNPSPLIT} --samtools_path ${SAMTOOLS_DIR} --snp_file ${SNP_FILE} ${BAM_OUT}/${ID_OUTBAM}.bam 
 else
     # Paired-end mapping
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_NMASK} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${SNPSPLIT} --paired --samtools_path ${SAMTOOLS_DIR} --snp_file ${SNP_FILE} ${BAM_OUT}/${ID_OUTBAM}.bam 
 fi
+
+# Removing files
+rm ${BAM_OUT}/${ID_OUTBAM}.SNPsplit_sort.txt ${BAM_OUT}/${ID_OUTBAM}.genome*.bam ${BAM_OUT}/${ID_OUTBAM}.unassigned.bam ${BAM_OUT}/${ID_OUTBAM}.sortedByName.bam
 
 exit 0
