@@ -80,7 +80,6 @@ FASTA_OUT=${GEN_OUT}/fastas
 INDEXES=${FASTA_OUT}/indexes
 VCF_OUT=${GEN_OUT}/vcfs
 
-/bin/bash: :wq : commande introuvable
 OUT_DIR=MAPPED_OUTDIR
 
 #   Name for the output bam
