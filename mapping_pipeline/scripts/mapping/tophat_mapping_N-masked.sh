@@ -76,7 +76,7 @@ else
     fi  
 fi
 #- SNP file ?
-if [[ -z ${SNP_FILE} ]]; then SNP_FILE=${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt.gz;fi
+if [[ -z ${SNP_FILE} ]]; then SNP_FILE=${FASTA_OUT}/all_SNPs_${PATERNAL}_${MATERNAL}.txt.gz;fi
 if [[ ! -e ${SNP_FILE} ]]
 then
     echo "$0: WARNING - Missing SNP file for SNPsplit." 1>&2
