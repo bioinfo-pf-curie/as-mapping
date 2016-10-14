@@ -68,7 +68,7 @@ done
 mkdir -p ${OUT_DIR}
 
 # -- Run SNPsplit_genome_preparation to generate parental and N-masked genomes
-echo "Generating N-masked genomes of $PATERNAL and $MATERNAL ..."
+echo "$0: Generating N-masked genomes of $PATERNAL and $MATERNAL ..."
 
 ${SNPSPLIT_GEN} --nmasking --strain ${PATERNAL} --strain2 ${MATERNAL} --reference_genome ${REF_DIR} --vcf_file ${VCF}
 
@@ -88,9 +88,10 @@ done
 mkdir -p ${OUT_DIR}/SNPsplit_reports
 mv ${PATERNAL}_${MATERNAL}_*report.txt ${OUT_DIR}/SNPsplit_reports
 # SNPs
-gzip all_${MATERNAL}_SNPs_${PATERNAL}_*.txt
-mv all_${MATERNAL}_SNPs_${PATERNAL}_*.txt.gz ${OUT_DIR}
+awk '{if ($2=="MT") $2="chrM";else $2="chr"$2; print}' OFS='\t' all_${MATERNAL}_SNPs_${PATERNAL}_*.txt > ${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt
+gzip ${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt
 # Delete files
+rm all_${MATERNAL}_SNPs_${PATERNAL}_*.txt
 rm ${PATERNAL}_${MATERNAL}_SNPs_*.txt
 rm -r ${PATERNAL}_${MATERNAL}_*_full_sequence ${PATERNAL}_${MATERNAL}_*_N-masked
 

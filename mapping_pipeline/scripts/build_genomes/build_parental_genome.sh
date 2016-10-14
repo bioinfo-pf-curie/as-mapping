@@ -59,7 +59,7 @@ done
 mkdir -p $OUT_DIR
 
 # -- Run SNPsplit_genome_preparation to generate parental and N-masked genomes
-echo "Generating parental genome of ${STRAIN} ..."
+echo "$0: Generating parental genome of ${STRAIN} ..."
 echo "in $OUT_DIR"
 
 ${SNPSPLIT_GEN} --strain ${STRAIN} --reference_genome ${REF_DIR} --vcf_file ${VCF} --no_nmasking
@@ -84,3 +84,5 @@ mv *_${STRAIN}_*.gz ${OUT_DIR}
 # Delete files
 rm ${STRAIN}_specific_*.txt
 rm -r SNPs_${STRAIN} ${STRAIN}_full_sequence
+
+exit 0
