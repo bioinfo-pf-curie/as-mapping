@@ -76,11 +76,11 @@ if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
-    ${MARKALLELICSTATUS} -r -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
+    ${MARKALLELICSTATUS} -r -f -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 else
     # Paired-end mapping
     ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
-    ${MARKALLELICSTATUS} -r --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
+    ${MARKALLELICSTATUS} -r -f --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 fi
 
 exit 0

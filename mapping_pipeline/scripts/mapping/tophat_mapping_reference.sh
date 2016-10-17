@@ -90,12 +90,12 @@ then
     # Single-end mapping
     ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F}
     mv ${BAM_OUT}/tophat_out/accepted_hits.bam ${BAM_OUT}/${ID_OUTBAM}.bam
-    ${MARKALLELICSTATUS} -r -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
+    ${MARKALLELICSTATUS} -r -f -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 else
     # Paired-end mapping
     ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F} ${FQ_READS_R}
     mv ${BAM_OUT}/tophat_out/accepted_hits.bam ${BAM_OUT}/${ID_OUTBAM}.bam
-    ${MARKALLELICSTATUS} -r --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
+    ${MARKALLELICSTATUS} -r -f --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 fi
 
 
