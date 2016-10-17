@@ -92,7 +92,7 @@ do
 
     # Save and delete files
     # SNP
-    mv *_${GENO}_*.gz ${OUT_DIR}
+    mv *_${STRAIN}_*.gz ${OUT_DIR}
     # Reports
     mkdir -p ${OUT_DIR}/SNPsplit_reports
     mv *report.txt ${OUT_DIR}/SNPsplit_reports
