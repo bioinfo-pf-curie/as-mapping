@@ -682,7 +682,7 @@ if __name__ == "__main__":
     report.write("Input parameters\n")
     report.write("================\n")
     if (mapping_parental): report.write("Mapping type:     \tParental\n")
-    if (mapping_diploid): report.write("Mapping type:\tDiploid\n")
+    if (mapping_diploid): report.write("Mapping type:      \tDiploid\n")
     if (mapping_parental): report.write("Paternal BAM (G1):\t" + paternal + "\n") 
     if (mapping_parental): report.write("Maternal BAM (G2):\t" + maternal + "\n") 
     if (mapping_diploid): report.write("Input BAM:\t" + diploid + "\n")
@@ -704,17 +704,17 @@ if __name__ == "__main__":
     report.write("================================\n")
     report.write("Treated alignments:                             \t" + str(counter_alignments["treated"]) + "\n")
     report.write("Reads specific to G1:                           \t" + str(counter_alignments["G1"]) + \
-      "\t(" + str(round(float(counter_alignments["G1"])/counter_alignments["total"]*100,3)) + "%)\n")
+      " (" + str(round(float(counter_alignments["G1"])/counter_alignments["total"]*100,3)) + "%)\n")
     report.write("Reads specific to G2:                           \t" + str(counter_alignments["G2"]) + \
-      "\t(" + str(round(float(counter_alignments["G2"])/counter_alignments["total"]*100,3)) + "%)\n")
+      " (" + str(round(float(counter_alignments["G2"])/counter_alignments["total"]*100,3)) + "%)\n")
     report.write("Reads with no allelic information (UA):         \t" + str(counter_alignments["UA"]) + \
-      "\t(" + str(round(float(counter_alignments["UA"])/counter_alignments["total"]*100,3)) + "%)\n")
+      " (" + str(round(float(counter_alignments["UA"])/counter_alignments["total"]*100,3)) + "%)\n")
     report.write("Reads with conflicting allelic information (CF):\t" + str(counter_alignments["CF"]) + \
-      "\t(" + str(round(float(counter_alignments["CF"])/counter_alignments["total"]*100,3)) + "%)\n")
+      " (" + str(round(float(counter_alignments["CF"])/counter_alignments["total"]*100,3)) + "%)\n")
     report.write("Reads unmapped:                                 \t" + str(counter_alignments["unmapped"]) + \
-      "\t(" + str(round(float(counter_alignments["unmapped"])/counter_alignments["total"]*100,3)) + "%)\n")
+      " (" + str(round(float(counter_alignments["unmapped"])/counter_alignments["total"]*100,3)) + "%)\n")
     report.write("Total number of reads:                          \t" + str(counter_alignments["total"]) + \
-      "\t(100%)\n")
+      " (100%)\n")
     
 
     os.remove(outdir + outname + NSORTED_BAM + ".bam")
