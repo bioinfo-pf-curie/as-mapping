@@ -600,6 +600,7 @@ if __name__ == "__main__":
         handle_stat.write("## tag=    \t" + tag + "\n")
         handle_stat.write("## output= \t" + output + "\n")
         handle_stat.write("## paired= \t" + str(paired) + "\n")
+        handle_stat.write("## reference= \t" + str(reference) + "\n")
         handle_stat.write("## verbose=\t" + str(verbose) + "\n\n")
 
         handle_stat.write("SNPs report\n")

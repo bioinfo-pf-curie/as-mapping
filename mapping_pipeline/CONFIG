@@ -13,12 +13,11 @@
 # Required installed tools
 PYTHON=/bioinfo/local/build/python/python-2.7.9/bin/python2.7
 SAMTOOLS_DIR=/bioinfo/local/build/samtools/samtools-1.3/bin
-#CHECK_VARIANTS=/bioinfo/users/khillion/bin/clinTools/check_variants.py
 SNPSPLIT_DIR=/data/annotations/Mouse/personalized_genomes/SNPsplit
 
 # Local scripts
 #	Paths to the directory with the different scripts
-PIPELINE_PATH=/bioinfo/users/khillion/GIT_dev/as-mapping/mapping_pipeline
+PIPELINE_PATH=/bioinfo/users/khillion/GIT_dev/as-mapping_DEV/20161017_correction/mapping_pipeline
 
 #   Update paths and local scripts
 source ${PIPELINE_PATH}/ALL_PATHS
