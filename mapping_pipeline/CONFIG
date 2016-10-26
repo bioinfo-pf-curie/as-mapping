@@ -25,10 +25,6 @@ source ${PIPELINE_PATH}/ALL_PATHS
 # ------------ Input(s) ------------
 
 # Files or Directories
-#   Path of the reads to map (either .fq or .fq.gz)
-#   Only fill up FQ_READS_F for single-end
-FQ_READS_F=
-FQ_READS_R=
 #   full_vcf : latest VCF file downloaded from Sanger
 FULL_VCF=/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf
 
@@ -78,11 +74,6 @@ GEN_OUT=GENERATION_DIR
 FASTA_OUT=${GEN_OUT}/fastas
 INDEXES=${FASTA_OUT}/indexes
 VCF_OUT=${GEN_OUT}/vcfs
-
-OUT_DIR=MAPPED_OUTDIR
-
-#   Name for the output bam
-OUT_NAME=MY_ANALYSIS
 
 # ------------ Bowtie2 Parameters ------------
 BOWTIE2_DIR=/bioinfo/local/build/bowtie2/bowtie2-2.2.5

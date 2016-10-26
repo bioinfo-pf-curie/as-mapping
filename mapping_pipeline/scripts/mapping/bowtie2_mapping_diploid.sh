@@ -10,6 +10,10 @@ while [ $# -gt 0 ]
 do
     case "$1" in
     (-c) config=$2; shift;;
+    (-f) FQ_READS_F=$2; shift;;
+    (-r) FQ_READS_R=$2; shift;;
+    (-o) OUT_DIR=$2; shift;;
+    (-n) OUT_NAME=$2; shift;;
     (-h) usage;;
     (--) shift; break;;
     (-*) echo "$0: ERROR - unrecognized option $1" 1>&2; exit 1;; 
@@ -31,6 +35,10 @@ source ${config}
 function usage {
     echo -e "Usage : $0"
     echo -e "-c"" <Config file>"
+    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
+    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
+    echo -e "-o"" <Output directory for the alignment files>"
+    echo -e "-n"" <Output name for the alignment files>"
     echo -e "-h"" <help>"
     exit
 }
