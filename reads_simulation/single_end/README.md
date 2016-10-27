@@ -39,15 +39,22 @@ samtools          | path to samtools
 SNPsplit_gen      | path to SNPsplit_genome_preparation script
 simreads          | path of the current directory
 
-#### INPUT files :
+### Inputs:
+
+#### Informations :
 
 **VARIABLE NAME** | **CONTENT**
 ----------------- | -----------
 id_geno1          | name of the first genotype
 id_geno2          | name of the second genotype
 coverage          | number of reads to generate per interval
+
+#### Files:
+
+**VARIABLE NAME** | **CONTENT**
+----------------- | -----------
 regions           | regions to generate reads from (.bed)
-ref_dir           | path to your reference chromosomes directory (Ensemble format)
+ref_dir           | path to your reference chromosomes directory (Ensembl format)
 full_vcf          | path to the VCF file (.vcf). For mouse, VCF files are downloaded [here](ftp://ftp-mouse.sanger.ac.uk/)
 mappa             | [OPTIONAL] mappability tracks (.bed). Mappability tracks can be generated using [GEMTOOLS](https://github.com/gemtools/gemtools)
 ASratio           | [OPTIONAL] allelic ratio for the first genotype (.bed)
@@ -70,7 +77,7 @@ By default names are given but can be changed by the user
 
 **PARAMETER** | **DESCRIPTION**
 ------------- | ---------------
-main_out      | Directory where generated genome will be stored
+main_out      | Directory where generated files (genomes, vcf...) will be stored
 vcf_outdir    | sub-directory with all the generated VCF files
 fasta_outdir  | sub-directory with all the generated FASTA files
 tmp_outdir    | sub-directory with all the generated temporary files
