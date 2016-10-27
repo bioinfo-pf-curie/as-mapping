@@ -52,24 +52,7 @@ then
         then # Make Bowtie2 indexes if user did not specify path
             if [[ -z ${FASTA_NMASK} ]]
             then # Build N-masked genome first
-                if [[ ${MAP_PAR} -eq 1 ]] && [[ -z ${FASTA_GENO1} || -z ${FASTA_GENO2} ]]
-                then # Also build parental genomes
-                    ${BUILD_NMASK_GENOME} -a -p ${ID_GENO1} -m ${ID_GENO2} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
-                    if [[ -z ${B2_INDEX_GENO1} ]]
-                    then # Make Bowtie2 indexes for GENO1
-                        if [[ -z ${FASTA_GENO1} ]]; then FASTA_GENO1=${FASTA_OUT}/${ID_GENO1}.fa; fi
-                    ${BUILD_B2_INDEX} -f ${FASTA_GENO1} -b ${BOWTIE2_DIR} -o ${INDEXES}
-                    B2_INDEX_GENO1=${INDEXES}/${ID_GENO1} # Update bowtie2 indexes path
-                    fi
-                    if [[ -z ${B2_INDEX_GENO2} ]]
-                    then # Make Bowtie2 indexes for GENO2
-                        if [[ -z ${FASTA_GENO2} ]]; then FASTA_GENO2=${FASTA_OUT}/${ID_GENO2}.fa; fi
-                    ${BUILD_B2_INDEX} -f ${FASTA_GENO2} -b ${BOWTIE2_DIR} -o ${INDEXES}
-                    B2_INDEX_GENO2=${INDEXES}/${ID_GENO2} # Update bowtie2 indexes path
-                    fi
-                else
-                    ${BUILD_NMASK_GENOME} -p ${ID_GENO1} -m ${ID_GENO2} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
-                fi
+                ${BUILD_NMASK_GENOME} -p ${ID_GENO1} -m ${ID_GENO2} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
                 FASTA_NMASK=${FASTA_OUT}/N-masked_${ID_GENO1}_${ID_GENO2}.fa
             fi
             ${BUILD_B2_INDEX} -f ${FASTA_NMASK} -b ${BOWTIE2_DIR} -o ${INDEXES} 
@@ -87,25 +70,23 @@ then
             if [[ -z ${FASTA_DIP} ]]
             then
                 ${BUILD_DIPLOID_GENOME} -p ${ID_GENO1} -m ${ID_GENO2} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
-                    if [[ ${MAP_PAR} -eq 1 && -z ${B2_INDEX_GENO1} ]]
-                    then # Make Bowtie2 indexes for GENO1
-                        if [[ -z ${FASTA_GENO1} ]]; then FASTA_GENO1=${FASTA_OUT}/${ID_GENO1}.fa; fi
-                    ${BUILD_B2_INDEX} -f ${FASTA_GENO1} -b ${BOWTIE2_DIR} -o ${INDEXES}
-                    B2_INDEX_GENO1=${INDEXES}/${ID_GENO1} # Update bowtie2 indexes path
-                    fi
-                    if [[ ${MAP_PAR} -eq 1 && -z ${B2_INDEX_GENO2} ]]
-                    then # Make Bowtie2 indexes for GENO2
-                        if [[ -z ${FASTA_GENO2} ]]; then FASTA_GENO2=${FASTA_OUT}/${ID_GENO2}.fa; fi
-                    ${BUILD_B2_INDEX} -f ${FASTA_GENO2} -b ${BOWTIE2_DIR} -o ${INDEXES}
-                    B2_INDEX_GENO2=${INDEXES}/${ID_GENO2} # Update bowtie2 indexes path
-                    fi
                 FASTA_DIP=${FASTA_OUT}/${ID_GENO1}_${ID_GENO2}.fa
             fi
-            ${BUILD_B2_INDEX} -f ${FASTA_DIP} -b ${BOWTIE2_DIR} -o ${INDEXES}
+            #${BUILD_B2_INDEX} -f ${FASTA_DIP} -b ${BOWTIE2_DIR} -o ${INDEXES}
         fi 
     fi
 fi
 
+
+if [[ ${ID_GENO1} == 'C57BL_6J' ]]
+then
+    B2_INDEX_GENO1=${B2_INDEX_REF}
+    FASTA_GENO1=${REF_GENO}
+elif [[ ${ID_GENO2} == 'C57BL_6J' ]]
+then
+    B2_INDEX_GENO2=${B2_INDEX_REF}
+    FASTA_GENO2=${REF_GENO}
+fi
 if [[ ${MAP_PAR} -eq 1 ]]
 then
     if [[ ${MAPPER} == 'BOWTIE2' ]] || [[ ${MAPPER} == 'TOPHAT' ]] # Bowtie2 or Tophat
@@ -118,7 +99,7 @@ then
                 ${BUILD_PARENTAL_GENOME} -s ${ID_GENO1} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
                 FASTA_GENO1=${FASTA_OUT}/${ID_GENO1}.fa
             fi
-            ${BUILD_B2_INDEX} -f ${FASTA_GENO1} -b ${BOWTIE2_DIR} -o ${INDEXES}
+            #${BUILD_B2_INDEX} -f ${FASTA_GENO1} -b ${BOWTIE2_DIR} -o ${INDEXES}
         fi 
         # Second genotype
         if [[ -z ${B2_INDEX_GENO2} ]]
@@ -128,7 +109,7 @@ then
                 ${BUILD_PARENTAL_GENOME} -s ${ID_GENO2} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
                 FASTA_GENO2=${FASTA_OUT}/${ID_GENO2}.fa
             fi
-            ${BUILD_B2_INDEX} -f ${FASTA_GENO2} -b ${BOWTIE2_DIR} -o ${INDEXES}
+            #${BUILD_B2_INDEX} -f ${FASTA_GENO2} -b ${BOWTIE2_DIR} -o ${INDEXES}
         fi
     fi
 fi

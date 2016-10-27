@@ -17,7 +17,6 @@ function usage {
     echo -e "-r/--reference"" <Directory with reference chromosomes (Ensembl format)>" 
     echo -e "-o/--outdir"" <Output directory>" 
     echo -e "[-g/--snpsplit_gen]"" <SNPsplit_genome_preparation path>" 
-    echo -e "[-a/--parental]"" <Also build parental genomes>" 
     echo -e "-h/--help"" <Help>"
     exit 0
 }
@@ -38,7 +37,6 @@ do
         --reference) args="${args}-r ";;
         --outdir) args="${args}-o ";;
         --snpsplit_gen) args="${args}-g ";;
-        --parental) args="${args}-a ";;
         *) [[ "${arg:0:1}" == "-" ]] || delim="\""
             args="${args}${delim}${arg}${delim} ";;
     esac
@@ -47,7 +45,7 @@ done
 eval set -- ${args}
 
 # Short arguments parsing
-while getopts :p:m:v:r:o:g:ah option
+while getopts :p:m:v:r:o:g:h option
 do
     case "${option}" in
         p) PATERNAL=${OPTARG};;
@@ -56,7 +54,6 @@ do
         r) REF_DIR=${OPTARG};;
         o) OUT_DIR=${OPTARG};;
         g) SNPSPLIT_GEN=${OPTARG};;
-        a) BUILD_PAR=true;;
         h) usage;;
         \?) echo "$0: ERROR - Invalid option: - ${OPTARG}" 1>&2; exit 1;;
         :) echo "$0: ERROR - Option -${OPTARG} requires an argument." 1>&2; exit 1;;
@@ -70,63 +67,58 @@ mkdir -p ${OUT_DIR}
 # -- Run SNPsplit_genome_preparation to generate parental and N-masked genomes
 echo "$0: Generating N-masked genomes of $PATERNAL and $MATERNAL ..."
 
-${SNPSPLIT_GEN} --nmasking --strain ${PATERNAL} --strain2 ${MATERNAL} --reference_genome ${REF_DIR} --vcf_file ${VCF}
+# In case one of the genotype is from reference genome (C57BL_6J)
+if [[ ${PATERNAL} == 'C57BL_6J' ]]
+then
+    STRAINS="--strain ${MATERNAL}"
+    PREFIX=${MATERNAL}
+elif [[ ${MATERNAL} == 'C57BL_6J' ]]
+then
+    STRAINS="--strain ${PATERNAL}"
+    PREFIX=${PATERNAL}
+else # Hybrid genome with strains different from reference genome
+    STRAINS="--strain ${PATERNAL} --strain2 ${MATERNAL}"
+    PREFIX=${PATERNAL}_${MATERNAL}
+fi
+
+${SNPSPLIT_GEN} --nmasking ${STRAINS} --reference_genome ${REF_DIR} --vcf_file ${VCF}
 
 # -- Concatenation of the N-masked genome
-for i in `seq 1 19` X Y MT
+for i in `ls -d --color=never ${PREFIX}*_N-masked/*`
 do
-    if [[ $i == MT ]]
+    if [[ $i =~ MT ]]
     then
-        sed 's/>MT/>chrM/' ${PATERNAL}_${MATERNAL}_*_N-masked/chr${i}.N-masked.fa >> ${OUT_DIR}/N-masked_${PATERNAL}_${MATERNAL}.fa
+        sed 's/>MT/>chrM/' ${i} >> ${OUT_DIR}/N-masked_${PATERNAL}_${MATERNAL}.fa
     else
-	    sed 's/>/>chr/' ${PATERNAL}_${MATERNAL}_*_N-masked/chr${i}.N-masked.fa >> ${OUT_DIR}/N-masked_${PATERNAL}_${MATERNAL}.fa
+	    sed 's/>/>chr/' ${i} >> ${OUT_DIR}/N-masked_${PATERNAL}_${MATERNAL}.fa
     fi
 done
 
 # -- Save and delete files
+
 # Reports
 mkdir -p ${OUT_DIR}/SNPsplit_reports
-mv ${PATERNAL}_${MATERNAL}_*report.txt ${OUT_DIR}/SNPsplit_reports
-# SNPs
-awk '{if ($2=="MT") $2="chrM";else $2="chr"$2; print}' OFS='\t' all_${MATERNAL}_SNPs_${PATERNAL}_*.txt > ${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt
-gzip ${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt
-# Delete files
-rm all_${MATERNAL}_SNPs_${PATERNAL}_*.txt
-rm ${PATERNAL}_${MATERNAL}_SNPs_*.txt
-rm -r ${PATERNAL}_${MATERNAL}_*_full_sequence ${PATERNAL}_${MATERNAL}_*_N-masked
+mv ${PREFIX}_*report.txt ${OUT_DIR}/SNPsplit_reports
 
-# -- [OPTION] Concatenetion of the parental genome in fasta files
-if [[ $BUILD_PAR ]]
+# SNPs and delete specific files
+if [[ ${PATERNAL} == 'C57BL_6J' ]] || [[ ${MATERNAL} == 'C57BL_6J' ]] 
 then
-    for GENO in $PATERNAL $MATERNAL
-    do
-	    for i in `seq 1 19` X Y MT 
-	    do
-            if [[ $i == MT ]]
-            then
-                 sed 's/>MT/>chrM/' ${GENO}_full_sequence/chr${i}.SNPs_introduced.fa >> ${OUT_DIR}/${GENO}.fa
-		    else
-                 sed 's/>/>chr/' ${GENO}_full_sequence/chr${i}.SNPs_introduced.fa >> ${OUT_DIR}/${GENO}.fa
-	        fi
-        done
-        
-        # Save and delete files
-        # Reports
-        mkdir -p ${OUT_DIR}/SNPsplit_reports
-        mv ${GENO}_*report.txt ${OUT_DIR}/SNPsplit_reports
-        # SNPs
-        mv *_${GENO}_*.gz ${OUT_DIR}
-        # Delete files
-        rm ${GENO}_specific_*.txt
-        rm -r SNPs_${GENO} ${GENO}_full_sequence ${GENO}_N-masked
-    done    
+    gunzip -c all_SNPs_${PREFIX}_*.txt.gz | awk '{if ($2=="MT") $2="chrM";else $2="chr"$2; print}' OFS='\t' > ${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt
+    rm all_SNPs_${PREFIX}_*.txt.gz
+    rm -r SNPs_${PREFIX} ${PREFIX}_N-masked
 else
+    awk '{if ($2=="MT") $2="chrM";else $2="chr"$2; print}' OFS='\t' all_${MATERNAL}_SNPs_${PATERNAL}_*.txt > ${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt
+    # Delete specific files
+    rm all_${MATERNAL}_SNPs_${PATERNAL}_*.txt
+    rm -r ${PATERNAL}_${MATERNAL}_*_full_sequence ${PATERNAL}_${MATERNAL}_*_N-masked ${PATERNAL}_${MATERNAL}_SNPs_in_common.*.txt
     for GENO in $PATERNAL $MATERNAL
     do
-        # Delete files
         rm -r ${GENO}_full_sequence ${GENO}_N-masked SNPs_${GENO}
         rm *_${GENO}_*.gz ${GENO}_*report.txt ${GENO}_specific_*.txt
     done
 fi
+
+# Compress SNP file
+gzip ${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt
 
 exit 0
