@@ -43,29 +43,29 @@ echo -e "  |\t$(basename $0) : Rephasing SAM, merging files and converting to BA
 for sam in `ls ${art_outdir}*.sam`
 do
 	# Get the information from every header to build a common header afterwards
-	${samtools} view -H ${sam} | grep '^@HD' >> ${art_outdir}HD.tmp
-	${samtools} view -H ${sam} | grep '^@SQ' >> ${art_outdir}SQ.tmp
-	${samtools} view -H ${sam} | grep '^@PG' >> ${art_outdir}PG.tmp
+	${samtools} view -H ${sam} | grep '^@HD' >> ${art_outdir}/HD.tmp
+	${samtools} view -H ${sam} | grep '^@SQ' >> ${art_outdir}/SQ.tmp
+	${samtools} view -H ${sam} | grep '^@PG' >> ${art_outdir}/PG.tmp
 	# Modify the position of the reference name (chr) and the position
-	awk '{if ($1 !~ /^@/) {split($1,a,":"); split(a[2],b,"-"); $3=a[1]; $4=b[1]+$4; print}}' OFS='\t' ${sam} >> ${art_outdir}SAM.tmp
+	awk '{if ($1 !~ /^@/) {split($1,a,":"); split(a[2],b,"-"); $3=a[1]; $4=b[1]+$4; print}}' OFS='\t' ${sam} >> ${art_outdir}/SAM.tmp
 done
 
-uniq ${art_outdir}HD.tmp > ${art_outdir}HEADER.tmp
-sed -r 's/:[0-9]+-[0-9]+_[0-9a-Z]+_[0-9a-Z]+//' ${art_outdir}SQ.tmp | sort | uniq >> ${art_outdir}HEADER.tmp
+uniq ${art_outdir}/HD.tmp > ${art_outdir}/HEADER.tmp
+sed -r 's/:[0-9]+-[0-9]+_[0-9a-Z]+_[0-9a-Z]+//' ${art_outdir}/SQ.tmp | sort | uniq >> ${art_outdir}/HEADER.tmp
 counter=1
 while read -r pgline
 do
-	echo ${pgline} | sed -E "s/ID:[0-9]+/ID:${counter}/" >> ${art_outdir}HEADER.tmp
+	echo ${pgline} | sed -E "s/ID:[0-9]+/ID:${counter}/" >> ${art_outdir}/HEADER.tmp
 	counter=$((counter+1))
-done < ${art_outdir}PG.tmp
+done < ${art_outdir}/PG.tmp
 
-cat ${art_outdir}HEADER.tmp ${art_outdir}SAM.tmp > ${art_outdir}FULL_SAM.tmp
-${samtools} view -bS ${art_outdir}FULL_SAM.tmp > ${art_outdir}${id_geno1}_${id_geno2}.bam
+cat ${art_outdir}/HEADER.tmp ${art_outdir}/SAM.tmp > ${art_outdir}/FULL_SAM.tmp
+${samtools} view -bS ${art_outdir}/FULL_SAM.tmp > ${art_outdir}/${id_geno1}_${id_geno2}.bam
 
 # Merging .fq and compressing
-echo -e "  |\t$(basename $0) : Merging .fq to ${art_outdir}${id_geno1}_${id_geno2}.fq.gz ..."
-cat ${art_outdir}*.fq | gzip > ${art_outdir}${id_geno1}_${id_geno2}.fq.gz
+echo -e "  |\t$(basename $0) : Merging .fq to ${art_outdir}/${id_geno1}_${id_geno2}.fq.gz ..."
+cat ${art_outdir}/*.fq | gzip > ${art_outdir}/${id_geno1}_${id_geno2}.fq.gz
 
 # Removing temporary files and unused files
 echo -e "  |\t$(basename $0) : Cleaning files ..."
-rm ${art_outdir}*.tmp ${art_outdir}*.aln ${art_outdir}*.fq ${art_outdir}*.sam
+rm ${art_outdir}/*.tmp ${art_outdir}/*.aln ${art_outdir}/*.fq ${art_outdir}/*.sam

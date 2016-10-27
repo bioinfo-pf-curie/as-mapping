@@ -26,7 +26,6 @@ source ${config}
 function usage {
     echo -e "Usage : $0"
     echo -e "-c"" <Config file>"
-	echo -e "-n"" <Number of reads to be generated from each allele>"
     echo -e "-h"" <help>"
     exit
 }
@@ -37,15 +36,15 @@ start=`date +%s`
 
 #### STEP 1 : Generation of the parental chromosomes
 
-if [[ ! -e ${fasta_outdir}${id_geno1}.fa ]]
+if [[ ! -e ${fasta_outdir}/${id_geno1}.fa ]]
 then
 	echo "Generation of the parental genome for ${id_geno1} ..."
-	${simreads}scripts/build_parental_reference.sh -i ${id_geno1} -c ${config}
+	${simreads}/scripts/build_parental_reference.sh -i ${id_geno1} -c ${config}
 fi
-if [[ ! -e ${fasta_outdir}${id_geno2}.fa ]]
+if [[ ! -e ${fasta_outdir}/${id_geno2}.fa ]]
 then
 	echo "Generation of the parental genome for ${id_geno2} ..."
-	${simreads}scripts/build_parental_reference.sh -i ${id_geno2} -c ${config}
+	${simreads}/scripts/build_parental_reference.sh -i ${id_geno2} -c ${config}
 fi
 
 
@@ -53,12 +52,12 @@ fi
 
 echo "Generation of the intervals in BED format ..."
 mkdir -p ${bed_outdir}
-${simreads}scripts/generate_intervals.sh -c ${config}
+${simreads}/scripts/generate_intervals.sh -c ${config}
 
 
 #### STEP 3 : Cleaning of the different outputs (rephasing, removing unused files, merging .fq and .sam)
 echo "Merging and Cleaning files ..."
-${simreads}scripts/cleaning_outputs.sh -c ${config}
+${simreads}/scripts/cleaning_outputs.sh -c ${config}
 
 end=`date +%s`
 echo " ==================================== "

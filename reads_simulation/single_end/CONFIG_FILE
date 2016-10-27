@@ -15,33 +15,33 @@ samtools=/bioinfo/local/build/samtools/samtools/bin/samtools
 SNPsplit_gen=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
 
 # 	Path of the read simulation scripts
-simreads=/bioinfo/users/khillion/GIT/as-mapping/reads_simulation/single_end/
-extract_SNPs=${simreads}scripts/extract_snps.py
+simreads=/bioinfo/users/khillion/GIT/as-mapping/reads_simulation/single_end
+extract_SNPs=${simreads}/scripts/extract_snps.py
 
 
 # ------------ INPUT ------------
 
 #	IDs of the strains
-id_geno1="CAST_EiJ"
-id_geno2="129S1_SvImJ"
+id_geno1=CAST_EiJ
+id_geno2=129S1_SvImJ
 
 #   Coverage
 coverage=100
 
 #   BED file with the desired region for generation
-regions="REGIONS_SELECTED.bed"
+regions=REGIONS_SELECTED.bed
 
 #   Directory containing every chromosomes of the reference genome at the fasta format (no "chr")
-ref_dir="/bioinfo/users/khillion/data/genomes/mm10/chromosomes/"
+ref_dir=/bioinfo/users/khillion/data/genomes/mm10/chromosomes
 
 # 	VCF files
 #		 full_vcf : Contain SNPs of all different strains of mice
-full_vcf="/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf"
+full_vcf=/data/annotations/Mouse/variant_informations/mgpV5_mm10/mgp.v5.merged.snps_all.dbSNP142.vcf
 
 #	[OPTIONAL] Mappability track :
 #	Mappability tracks can be generated using GEMTOOLS (gemtools-1.7.1-i3)
 #	available at : https://github.com/gemtools/gemtools
-mappa="/data/annotations/Mouse/mappability/mm10/100bp/mm10_100.bed"
+mappa=/data/annotations/Mouse/mappability/mm10/100bp/mm10_100.bed
 
 #	[OPTIONAL] BED file for allele ratio of genotype 1
 #	BED5 file with the following field
@@ -71,10 +71,10 @@ sequencer="HS20"	# The name of Illumina sequencing system :
 
 #	Directories 
 #		Output directory where new generated files that can be re-used are stored
-main_out="data/"
-vcf_outdir=${main_out}"vcfs/"
-fasta_outdir=${main_out}"fastas/"
-tmp_outdir=${main_out}"tmp/"
+main_out=data/
+vcf_outdir=${main_out}/vcfs
+fasta_outdir=${main_out}/fastas
+tmp_outdir=${main_out}/tmp
 
 #		Directory where the generated reads will be stored
-art_outdir="simulated_reads/"
+art_outdir=OUTPUT_DIRECTORY

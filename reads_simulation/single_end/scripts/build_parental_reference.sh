@@ -51,7 +51,7 @@ ${SNPsplit_gen} --no_nmasking --strain ${id_geno} --reference_genome ${ref_dir} 
 
 for i in `seq 1 19` X Y MT 
 do  
-    sed 's/>/>chr/' ${id_geno}_full_sequence/chr${i}.SNPs_introduced.fa >> ${fasta_outdir}${id_geno}.fa
+    sed 's/>/>chr/' ${id_geno}_full_sequence/chr${i}.SNPs_introduced.fa >> ${fasta_outdir}/${id_geno}.fa
 done
 
 # Cleaning (Only paternal.fa is kept as both generated genomes should be identical due to the presence of only homozygous SNPs)
