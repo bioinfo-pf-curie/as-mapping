@@ -65,13 +65,13 @@ echo "in $OUT_DIR"
 ${SNPSPLIT_GEN} --strain ${STRAIN} --reference_genome ${REF_DIR} --vcf_file ${VCF} --no_nmasking
 
 # -- Concatenetion of the parental genome in fasta files
-for i in `seq 1 19` X Y MT
+for i in `ls -d --color=never ${STRAIN}_full_sequence/*`
 do
-    if [[ $i == MT ]]
+    if [[ $i =~ MT ]]
     then
-        sed 's/>MT/>chrM/' ${STRAIN}_full_sequence/chr${i}.SNPs_introduced.fa >> ${OUT_DIR}/${STRAIN}.fa
+        sed 's/>MT/>chrM/' ${i} >> ${OUT_DIR}/${STRAIN}.fa
     else
-        sed 's/>/>chr/' ${STRAIN}_full_sequence/chr${i}.SNPs_introduced.fa >> ${OUT_DIR}/${STRAIN}.fa
+        sed 's/>/>chr/' ${i} >> ${OUT_DIR}/${STRAIN}.fa
 	fi
 done
 

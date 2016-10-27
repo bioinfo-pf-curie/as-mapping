@@ -52,6 +52,28 @@ mkdir -p ${BAM_OUT}
 ID_OUTBAM=${OUT_NAME}_parental
 
 ## Checking input parameters for mapping
+#- One parent is reference ?
+if [[ ${ID_GENO1} == 'C57BL_6J' ]]
+then
+    ID_REF=$(basename ${REF_GENO%.fa*})
+    if [[ -z ${B2_INDEX_REF} ]]
+    then
+        B2_INDEX_GENO1=${INDEXES}/${ID_REF}
+    else
+        B2_INDEX_GENO1=${B2_INDEX_REF}
+    fi
+fi
+if [[ ${ID_GENO2} == 'C57BL_6J' ]]
+then
+    ID_REF=$(basename ${REF_GENO%.fa*})
+    if [[ -z ${B2_INDEX_REF} ]]
+    then
+        B2_INDEX_GENO2=${INDEXES}/${ID_REF}
+    else
+        B2_INDEX_GENO2=${B2_INDEX_REF}
+    fi
+fi
+
 #- Indexes ?
 if [[ -z ${B2_INDEX_GENO1} ]]; then B2_INDEX_GENO1=${INDEXES}/${ID_GENO1};fi
 if [[ ! -e ${B2_INDEX_GENO1}.rev.2.bt2 ]]
