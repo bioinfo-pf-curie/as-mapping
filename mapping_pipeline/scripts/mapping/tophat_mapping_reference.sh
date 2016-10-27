@@ -61,6 +61,7 @@ if [[ -z ${B2_INDEX_REF} ]]; then B2_INDEX_REF=${INDEXES}/${ID_REF};fi
 if [[ ! -e ${B2_INDEX_REF}.rev.2.bt2 ]]
 then
 	echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_REF}. Exit." 1>&2
+    echo "$0: ERROR - HINT: Generate genomes and indexes using build_genomes_indexes.sh." 1>&2
     exit 1
 fi
 #  Reads ?

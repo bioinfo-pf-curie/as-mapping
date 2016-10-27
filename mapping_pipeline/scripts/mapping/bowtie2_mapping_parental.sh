@@ -79,12 +79,14 @@ if [[ -z ${B2_INDEX_GENO1} ]]; then B2_INDEX_GENO1=${INDEXES}/${ID_GENO1};fi
 if [[ ! -e ${B2_INDEX_GENO1}.rev.2.bt2 ]]
 then
     echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_GENO1}. Exit." 1>&2
+    echo "$0: ERROR - HINT: Generate genomes and indexes using build_genomes_indexes.sh." 1>&2
     exit 1
 fi
 if [[ -z ${B2_INDEX_GENO2} ]]; then B2_INDEX_GENO2=${INDEXES}/${ID_GENO2};fi
 if [[ ! -e ${B2_INDEX_GENO2}.rev.2.bt2 ]]
 then
     echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_GENO2}. Exit." 1>&2
+    echo "$0: ERROR - HINT: Generate genomes and indexes using build_genomes_indexes.sh." 1>&2
     exit 1
 fi
 #- Reads ?
