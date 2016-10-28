@@ -71,7 +71,7 @@ FASTA_DIPLOID=${PATERNAL}_${MATERNAL}.fa && rm -f ${OUT_DIR}/${FASTA_DIPLOID}
 
 echo "$0: Generating Diploid genome for ${PATERNAL} and ${MATERNAL} in ${OUT_DIR}"
 
-if [[ ${PATERNAL} == 'C57BL_6J' ]]
+if [[ ${PATERNAL} == 'REF' ]]
 then
     STRAINS=(${MATERNAL})
     for i in `ls -d --color=never /data/annotations/Mouse/mm10/chromosomes_Ensembl/*`
@@ -84,7 +84,7 @@ then
         fi
     done
     awk -v STRAIN=${PATERNAL}  '{if ($1 ~ /^>/) print $1"_"STRAIN; else print}' ${OUT_DIR}/${PATERNAL}.fa >> ${OUT_DIR}/${FASTA_DIPLOID}
-elif [[ ${MATERNAL} == 'C57BL_6J' ]]
+elif [[ ${MATERNAL} == 'REF' ]]
 then
     STRAINS=(${PATERNAL})
     for i in `ls -d --color=never /data/annotations/Mouse/mm10/chromosomes_Ensembl/*`

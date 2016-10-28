@@ -67,12 +67,12 @@ mkdir -p ${OUT_DIR}
 # -- Run SNPsplit_genome_preparation to generate parental and N-masked genomes
 echo "$0: Generating N-masked genomes of $PATERNAL and $MATERNAL ..."
 
-# In case one of the genotype is from reference genome (C57BL_6J)
-if [[ ${PATERNAL} == 'C57BL_6J' ]]
+# In case one of the genotype is from reference genome (REF)
+if [[ ${PATERNAL} == 'REF' ]]
 then
     STRAINS="--strain ${MATERNAL}"
     PREFIX=${MATERNAL}
-elif [[ ${MATERNAL} == 'C57BL_6J' ]]
+elif [[ ${MATERNAL} == 'REF' ]]
 then
     STRAINS="--strain ${PATERNAL}"
     PREFIX=${PATERNAL}
@@ -101,7 +101,7 @@ mkdir -p ${OUT_DIR}/SNPsplit_reports
 mv ${PREFIX}_*report.txt ${OUT_DIR}/SNPsplit_reports
 
 # SNPs and delete specific files
-if [[ ${PATERNAL} == 'C57BL_6J' ]] || [[ ${MATERNAL} == 'C57BL_6J' ]] 
+if [[ ${PATERNAL} == 'REF' ]] || [[ ${MATERNAL} == 'REF' ]] 
 then
     gunzip -c all_SNPs_${PREFIX}_*.txt.gz | awk '{if ($2=="MT") $2="chrM";else $2="chr"$2; print}' OFS='\t' > ${OUT_DIR}/all_SNPs_${PATERNAL}_${MATERNAL}.txt
     rm all_SNPs_${PREFIX}_*.txt.gz

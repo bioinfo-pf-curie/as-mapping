@@ -3,6 +3,16 @@
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) : Build necessary files from a config file
 
+#### Function #### ----------------------------------------------------------------------
+
+function usage {
+    echo -e "Usage : $0"
+    echo -e "-c"" <CONFIG file>"
+    echo -e "-h"" <help>"
+    exit
+}
+
+
 #### Parameters #### --------------------------------------------------------------------
 
 while [[ $# -gt 0 ]]
@@ -19,15 +29,8 @@ done
 
 if [[ -z $CONFIG ]]; then echo "ERROR : you need to specify a CONFIG file (-c). Exit."; exit 1; fi
 source $CONFIG
+source ${PIPELINE_PATH}/includes/path_fct.inc
 
-#### Function #### ----------------------------------------------------------------------
-
-function usage {
-    echo -e "Usage : $0"
-    echo -e "-c"" <CONFIG file>"
-    echo -e "-h"" <help>"
-    exit
-}
 
 #### Main #### --------------------------------------------------------------------------
 
@@ -71,18 +74,20 @@ then
             then
                 ${BUILD_DIPLOID_GENOME} -p ${ID_GENO1} -m ${ID_GENO2} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
                 FASTA_DIP=${FASTA_OUT}/${ID_GENO1}_${ID_GENO2}.fa
+                FASTA_GENO1=${FASTA_OUT}/${ID_GENO1}.fa
+                FASTA_GENO2=${FASTA_OUT}/${ID_GENO2}.fa
             fi
-            #${BUILD_B2_INDEX} -f ${FASTA_DIP} -b ${BOWTIE2_DIR} -o ${INDEXES}
+            ${BUILD_B2_INDEX} -f ${FASTA_DIP} -b ${BOWTIE2_DIR} -o ${INDEXES}
         fi 
     fi
 fi
 
 
-if [[ ${ID_GENO1} == 'C57BL_6J' ]]
+if [[ ${ID_GENO1} == 'REF' ]]
 then
     B2_INDEX_GENO1=${B2_INDEX_REF}
     FASTA_GENO1=${REF_GENO}
-elif [[ ${ID_GENO2} == 'C57BL_6J' ]]
+elif [[ ${ID_GENO2} == 'REF' ]]
 then
     B2_INDEX_GENO2=${B2_INDEX_REF}
     FASTA_GENO2=${REF_GENO}
@@ -99,7 +104,7 @@ then
                 ${BUILD_PARENTAL_GENOME} -s ${ID_GENO1} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
                 FASTA_GENO1=${FASTA_OUT}/${ID_GENO1}.fa
             fi
-            #${BUILD_B2_INDEX} -f ${FASTA_GENO1} -b ${BOWTIE2_DIR} -o ${INDEXES}
+            ${BUILD_B2_INDEX} -f ${FASTA_GENO1} -b ${BOWTIE2_DIR} -o ${INDEXES}
         fi 
         # Second genotype
         if [[ -z ${B2_INDEX_GENO2} ]]
@@ -109,7 +114,7 @@ then
                 ${BUILD_PARENTAL_GENOME} -s ${ID_GENO2} -v ${FULL_VCF} -g ${SNPSPLIT_GEN} -r ${REF_DIR} -o ${FASTA_OUT}
                 FASTA_GENO2=${FASTA_OUT}/${ID_GENO2}.fa
             fi
-            #${BUILD_B2_INDEX} -f ${FASTA_GENO2} -b ${BOWTIE2_DIR} -o ${INDEXES}
+            ${BUILD_B2_INDEX} -f ${FASTA_GENO2} -b ${BOWTIE2_DIR} -o ${INDEXES}
         fi
     fi
 fi

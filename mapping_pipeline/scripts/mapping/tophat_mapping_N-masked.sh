@@ -5,6 +5,21 @@
 #   Script to perform alignment to a N-masked genome using Tophat
 #   and filter for allele specific analysis
 
+#### Function #### ----------------------------------------------------------------------
+
+# Get args
+function usage {
+    echo -e "Usage : $0"
+    echo -e "-c"" <Config file>"
+    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
+    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
+    echo -e "-o"" <Output directory for the alignment files>"
+    echo -e "-n"" <Output name for the alignment files>"
+    echo -e "-h"" <help>"
+    exit
+}
+
+
 #### Parameters #### --------------------------------------------------------------------
 
 while [ $# -gt 0 ] 
@@ -29,20 +44,8 @@ then
     exit 1
 fi
 source ${config}
+source ${PIPELINE_PATH}/includes/path_fct.inc
 
-#### Function #### ----------------------------------------------------------------------
-
-# Get args
-function usage {
-    echo -e "Usage : $0"
-    echo -e "-c"" <Config file>"
-    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
-    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
-    echo -e "-o"" <Output directory for the alignment files>"
-    echo -e "-n"" <Output name for the alignment files>"
-    echo -e "-h"" <help>"
-    exit
-}
 
 #### Main #### --------------------------------------------------------------------------
 

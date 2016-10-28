@@ -3,6 +3,18 @@
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) : Script to build bowtie2 indexes
 
+
+#### Function #### -------------------------------------------------------------------
+
+function usage {
+    echo -e "Usage : $0"
+    echo -e "-f"" <FASTA file>"
+    echo -e "-b"" <BOWTIE2 directory>"
+    echo -e "-o"" <OUTPUT directory for indexes>"
+    echo -e "-h"" <help>"
+    exit
+}
+
 #### Parameters #### -----------------------------------------------------------------
 
 while [ $# -gt 0 ] 
@@ -26,17 +38,6 @@ then
 fi
 
 B2_BUILD_IND=${BOWTIE2_DIR}/bowtie2-build
-
-#### Function #### -------------------------------------------------------------------
-
-function usage {
-    echo -e "Usage : $0"
-    echo -e "-f"" <FASTA file>"
-    echo -e "-b"" <BOWTIE2 directory>"
-    echo -e "-o"" <OUTPUT directory for indexes>"
-    echo -e "-h"" <help>"
-    exit
-}
 
 #### Main #### -----------------------------------------------------------------------
 

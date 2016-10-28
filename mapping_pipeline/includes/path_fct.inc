@@ -42,3 +42,8 @@ SNPSPLIT_GEN=${SNPSPLIT_DIR}/SNPsplit_genome_preparation
 
 # Samtools
 SAMTOOLS=${SAMTOOLS_DIR}/samtools
+
+# Folders for different file type
+FASTA_OUT=${GEN_OUT}/fastas
+INDEXES=${FASTA_OUT}/indexes
+VCF_OUT=${GEN_OUT}/vcfs
