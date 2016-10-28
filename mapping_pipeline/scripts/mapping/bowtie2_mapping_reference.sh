@@ -5,6 +5,21 @@
 #   Script to map reads on reference genome using Bowtie2
 #   and filter for allele specific analysis
 
+#### Function #### ----------------------------------------------------------------------
+
+# Get args
+function usage {
+    echo -e "Usage : $0"
+    echo -e "-c"" <Config file>"
+    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
+    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
+    echo -e "-o"" <Output directory for the alignment files>"
+    echo -e "-n"" <Output name for the alignment files>"
+    echo -e "-h"" <help>"
+    exit
+}
+
+
 #### Parameters #### --------------------------------------------------------------------
 
 while [ $# -gt 0 ] 
@@ -29,20 +44,8 @@ then
 	exit 1
 fi
 source ${config}
+source ${PIPELINE_PATH}/includes/path_fct.inc
 
-#### Function #### ----------------------------------------------------------------------
-
-# Get args
-function usage {
-    echo -e "Usage : $0"
-    echo -e "-c"" <Config file>"
-    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
-    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
-    echo -e "-o"" <Output directory for the alignment files>"
-    echo -e "-n"" <Output name for the alignment files>"
-    echo -e "-h"" <help>"
-    exit
-}
 
 #### Main #### --------------------------------------------------------------------------
 
@@ -84,11 +87,11 @@ fi
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} 2> ${BAM_OUT}/${ID_OUTBAM}.b2logs | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     ${MARKALLELICSTATUS} -r -f -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 else
     # Paired-end mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} 2> ${BAM_OUT}/${ID_OUTBAM}.b2logs | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     ${MARKALLELICSTATUS} -r -f --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 fi
 

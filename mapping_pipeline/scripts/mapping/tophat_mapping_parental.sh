@@ -4,6 +4,21 @@
 # Comment(s) :
 #   Script to map reads on parental genomes using Tophat
 
+#### Function #### ----------------------------------------------------------------------
+
+# Get args
+function usage {
+    echo -e "Usage : $0"
+    echo -e "-c"" <Config file>"
+    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
+    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
+    echo -e "-o"" <Output directory for the alignment files>"
+    echo -e "-n"" <Output name for the alignment files>"
+    echo -e "-h"" <help>"
+    exit
+}
+
+
 #### Parameters #### --------------------------------------------------------------------
 
 while [ $# -gt 0 ] 
@@ -28,20 +43,8 @@ then
 	exit
 fi
 source ${config}
+source ${PIPELINE_PATH}/includes/path_fct.inc
 
-#### Function #### ----------------------------------------------------------------------
-
-# Get args
-function usage {
-    echo -e "Usage : $0"
-    echo -e "-c"" <Config file>"
-    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
-    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
-    echo -e "-o"" <Output directory for the alignment files>"
-    echo -e "-n"" <Output name for the alignment files>"
-    echo -e "-h"" <help>"
-    exit
-}
 
 #### Main #### --------------------------------------------------------------------------
 
@@ -53,7 +56,7 @@ ID_OUTBAM=${OUT_NAME}_parental
 
 # Checking input parameters for mapping
 #- One parent is reference ?
-if [[ ${ID_GENO1} == 'C57BL_6J' ]]
+if [[ ${ID_GENO1} == 'REF' ]]
 then
     ID_REF=$(basename ${REF_GENO%.fa*})
     if [[ -z ${B2_INDEX_REF} ]]
@@ -63,7 +66,7 @@ then
         B2_INDEX_GENO1=${B2_INDEX_REF}
     fi
 fi
-if [[ ${ID_GENO2} == 'C57BL_6J' ]]
+if [[ ${ID_GENO2} == 'REF' ]]
 then
     ID_REF=$(basename ${REF_GENO%.fa*})
     if [[ -z ${B2_INDEX_REF} ]]

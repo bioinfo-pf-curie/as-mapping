@@ -4,6 +4,21 @@
 # Comment(s) :
 #  		Script to perform alignment to a diploid genome
 
+#### Function #### ----------------------------------------------------------------------
+
+# Get args
+function usage {
+    echo -e "Usage : $0"
+    echo -e "-c"" <Config file>"
+    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
+    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
+    echo -e "-o"" <Output directory for the alignment files>"
+    echo -e "-n"" <Output name for the alignment files>"
+    echo -e "-h"" <help>"
+    exit
+}
+
+
 #### Parameters #### --------------------------------------------------------------------
 
 while [ $# -gt 0 ] 
@@ -28,20 +43,8 @@ then
     exit 1
 fi
 source ${config}
+source ${PIPELINE_PATH}/includes/path_fct.inc
 
-#### Function #### ----------------------------------------------------------------------
-
-# Get args
-function usage {
-    echo -e "Usage : $0"
-    echo -e "-c"" <Config file>"
-    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
-    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
-    echo -e "-o"" <Output directory for the alignment files>"
-    echo -e "-n"" <Output name for the alignment files>"
-    echo -e "-h"" <help>"
-    exit
-}
 
 #### Main #### --------------------------------------------------------------------------
 
@@ -76,13 +79,13 @@ if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
     # - Mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -k 3 -x ${B2_INDEX_DIP} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -k 3 -x ${B2_INDEX_DIP} -U ${FQ_READS_F} 2> ${BAM_OUT}/${ID_OUTBAM}.b2logs | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     # - Selection of best alignments
     ${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_OUTBAM}.bam -o ${BAM_OUT} -n ${ID_OUTBAM}
 else
     # Paired-end mapping
     # - Mapping
-    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -k 3 -x ${B2_INDEX_DIP} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -k 3 -x ${B2_INDEX_DIP} -1 ${FQ_READS_F} -2 ${FQ_READS_R} 2> ${BAM_OUT}/${ID_OUTBAM}.b2logs | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     # - Selection of best alignments
     # [WARNING] Not implemented yet in the script
     #${PYTHON} ${MERGE_ALIGN} -d ${BAM_OUT}/${ID_OUTBAM}.bam -s 2 -o ${BAM_OUT} -n ${ID_OUTBAM}

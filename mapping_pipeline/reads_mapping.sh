@@ -3,6 +3,20 @@
 # Contact : kenzo.hillion@curie.fr
 # Comment(s) : Main part of the mapping pipeline
 
+#### Function #### ----------------------------------------------------------------------
+
+function usage {
+    echo -e "Usage : $0"
+    echo -e "-c"" <CONFIG file>"
+    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
+    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
+    echo -e "-o"" <Output directory for the alignment files>"
+    echo -e "-n"" <Output name for the alignment files>"
+    echo -e "-h"" <help>"
+    exit
+}
+
+
 #### Parameters #### --------------------------------------------------------------------
 
 while [[ $# -gt 0 ]]
@@ -23,19 +37,7 @@ done
 
 if [[ -z $CONFIG ]]; then echo "$0: ERROR - you need to specify a CONFIG file (-c). Exit." 1>&2; exit 1; fi
 source $CONFIG
-
-#### Function #### ----------------------------------------------------------------------
-
-function usage {
-    echo -e "Usage : $0"
-    echo -e "-c"" <CONFIG file>"
-    echo -e "-f"" <Forward reads (paired-end) or reads (single-end)>"
-    echo -e "-r"" <[Paired-end ONLY] reverse reads>"
-    echo -e "-o"" <Output directory for the alignment files>"
-    echo -e "-n"" <Output name for the alignment files>"
-    echo -e "-h"" <help>"
-    exit
-}
+source ${PIPELINE_PATH}/includes/path_fct.inc
 
 #### Main #### --------------------------------------------------------------------------
 
