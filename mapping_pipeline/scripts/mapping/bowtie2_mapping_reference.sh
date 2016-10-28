@@ -61,6 +61,7 @@ if [[ -z ${B2_INDEX_REF} ]]; then B2_INDEX_REF=${INDEXES}/${ID_REF};fi
 if [[ ! -e ${B2_INDEX_REF}.rev.2.bt2 ]]
 then
 	echo "$0: ERROR - Missing Bowtie2 indexes. Exit." 1>&2
+    echo "$0: ERROR - HINT: Generate genomes and indexes using build_genomes_indexes.sh." 1>&2
     exit 1
 fi
 #  Reads ?
@@ -83,11 +84,11 @@ fi
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
-    #${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -U ${FQ_READS_F} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     ${MARKALLELICSTATUS} -r -f -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 else
     # Paired-end mapping
-    #${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
+    ${BOWTIE2_DIR}/bowtie2 ${B2_OPT} -x ${B2_INDEX_REF} -1 ${FQ_READS_F} -2 ${FQ_READS_R} | ${SAMTOOLS} view -bS - > ${BAM_OUT}/${ID_OUTBAM}.bam
     ${MARKALLELICSTATUS} -r -f --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 fi
 

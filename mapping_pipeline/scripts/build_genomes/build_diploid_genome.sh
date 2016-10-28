@@ -71,19 +71,49 @@ FASTA_DIPLOID=${PATERNAL}_${MATERNAL}.fa && rm -f ${OUT_DIR}/${FASTA_DIPLOID}
 
 echo "$0: Generating Diploid genome for ${PATERNAL} and ${MATERNAL} in ${OUT_DIR}"
 
-for STRAIN in $PATERNAL $MATERNAL
+if [[ ${PATERNAL} == 'C57BL_6J' ]]
+then
+    STRAINS=(${MATERNAL})
+    for i in `ls -d --color=never /data/annotations/Mouse/mm10/chromosomes_Ensembl/*`
+    do
+        if [[ $i =~ MT ]]
+        then
+            sed 's/>MT/>chrM/' ${i} >> ${OUT_DIR}/${PATERNAL}.fa
+        else
+            sed 's/>/>chr/' ${i} >> ${OUT_DIR}/${PATERNAL}.fa
+        fi
+    done
+    awk -v STRAIN=${PATERNAL}  '{if ($1 ~ /^>/) print $1"_"STRAIN; else print}' ${OUT_DIR}/${PATERNAL}.fa >> ${OUT_DIR}/${FASTA_DIPLOID}
+elif [[ ${MATERNAL} == 'C57BL_6J' ]]
+then
+    STRAINS=(${PATERNAL})
+    for i in `ls -d --color=never /data/annotations/Mouse/mm10/chromosomes_Ensembl/*`
+    do
+        if [[ $i =~ MT ]]
+        then
+            sed 's/>MT/>chrM/' ${i} >> ${OUT_DIR}/${MATERNAL}.fa
+        else
+            sed 's/>/>chr/' ${i} >> ${OUT_DIR}/${MATERNAL}.fa
+        fi
+    done
+    awk -v STRAIN=${MATERNAL}  '{if ($1 ~ /^>/) print $1"_"STRAIN; else print}' ${OUT_DIR}/${MATERNAL}.fa >> ${OUT_DIR}/${FASTA_DIPLOID}
+else
+    STRAINS=(${PATERNAL} ${MATERNAL})
+fi
+
+for STRAIN in $STRAINS
 do
     # -- SNPsplit
     ${SNPSPLIT_GEN} --strain ${STRAIN} --reference_genome ${REF_DIR} --vcf_file ${VCF} --no_nmasking
         
     # -- Concatenation in parental genome
-    for i in `seq 1 19` X Y MT
+    for i in `ls -d --color=never ${STRAIN}_full_sequence/*`
     do
-        if [[ $i == MT ]]
+        if [[ $i =~ MT ]]
         then
-            sed 's/>MT/>chrM/' ${STRAIN}_full_sequence/chr${i}.SNPs_introduced.fa >> ${OUT_DIR}/${STRAIN}.fa
+            sed 's/>MT/>chrM/' ${i} >> ${OUT_DIR}/${STRAIN}.fa
         else
-            sed 's/>/>chr/' ${STRAIN}_full_sequence/chr${i}.SNPs_introduced.fa >> ${OUT_DIR}/${STRAIN}.fa
+            sed 's/>/>chr/' ${i} >> ${OUT_DIR}/${STRAIN}.fa
         fi
     done
 

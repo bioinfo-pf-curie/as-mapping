@@ -58,6 +58,7 @@ if [[ -z ${B2_INDEX_DIP} ]]; then B2_INDEX_DIP=${INDEXES}/${ID_DIP};fi
 if [[ ! -e ${B2_INDEX_DIP}.rev.2.bt2l ]]
 then
     echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_DIP}. Exit." 1>&2
+    echo "$0: ERROR - HINT: Generate genomes and indexes using build_genomes_indexes.sh." 1>&2
     exit 1
 fi
 

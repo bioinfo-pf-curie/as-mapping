@@ -61,6 +61,7 @@ if [[ -z ${B2_INDEX_REF} ]]; then B2_INDEX_REF=${INDEXES}/${ID_REF};fi
 if [[ ! -e ${B2_INDEX_REF}.rev.2.bt2 ]]
 then
 	echo "$0: ERROR - Missing Bowtie2 indexes for ${ID_REF}. Exit." 1>&2
+    echo "$0: ERROR - HINT: Generate genomes and indexes using build_genomes_indexes.sh." 1>&2
     exit 1
 fi
 #  Reads ?
@@ -96,12 +97,12 @@ fi
 if [[ $SINGLE_END == true ]]
 then
     # Single-end mapping
-    #${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F}
+    ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F}
     mv ${BAM_OUT}/tophat_out/accepted_hits.bam ${BAM_OUT}/${ID_OUTBAM}.bam
     ${MARKALLELICSTATUS} -r -f -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 else
     # Paired-end mapping
-    #${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F} ${FQ_READS_R}
+    ${TOPHAT_DIR}/tophat -o ${BAM_OUT}/tophat_out ${TOPHAT_OPT} ${TOPHAT_B2_OPT} ${B2_INDEX_REF} ${FQ_READS_F} ${FQ_READS_R}
     mv ${BAM_OUT}/tophat_out/accepted_hits.bam ${BAM_OUT}/${ID_OUTBAM}.bam
     ${MARKALLELICSTATUS} -r -f --paired -i ${BAM_OUT}/${ID_OUTBAM}.bam -s ${SNP_FILE} -o ${BAM_OUT}/${ID_OUTBAM}_flagged.bam
 fi

@@ -59,6 +59,7 @@ if [[ -z ${B2_INDEX_NMASK} ]]; then B2_INDEX_NMASK=${INDEXES}/${ID_NMASK}; fi
 if [[ ! -e ${B2_INDEX_NMASK}.rev.2.bt2 ]]
 then
     echo "$0: ERROR - Missing Bowtie2 indexes. Exit." 1>&2
+    echo "$0: ERROR - HINT: Generate genomes and indexes using build_genomes_indexes.sh." 1>&2
     exit 1
 fi
 #  Reads ?
