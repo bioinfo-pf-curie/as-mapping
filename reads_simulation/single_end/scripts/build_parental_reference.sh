@@ -49,9 +49,14 @@ if [[ -z ${id_geno} ]]; then echo "Error : Please specify the name of the strain
 # Run SNPsplit to generate parental genome
 ${SNPsplit_gen} --no_nmasking --strain ${id_geno} --reference_genome ${ref_dir} --vcf_file ${full_vcf} 
 
-for i in `seq 1 19` X Y MT 
+for i in `ls -d --color=never ${id_geno}_full_sequence/*`
 do  
-    sed 's/>/>chr/' ${id_geno}_full_sequence/chr${i}.SNPs_introduced.fa >> ${fasta_outdir}/${id_geno}.fa
+    if [[ $i =~ MT ]]
+    then
+        sed 's/>MT/>chrM/' ${i} >> ${fasta_outdir}/${id_geno}.fa
+    else
+        sed 's/>/>chr/' ${i} >> ${fasta_outdir}/${id_geno}.fa
+    fi
 done
 
 # Cleaning (Only paternal.fa is kept as both generated genomes should be identical due to the presence of only homozygous SNPs)

@@ -20,7 +20,7 @@ For any question about the pipeline, please contact <kenzo.hillion@curie.fr>.
 
 ## Requirements
 
-Python version 2.7 is used for this pipeline and the [Pysam](https://github.com/pysam-developers/pysam) Python module is required.
+Python version 2.7 is used for this pipeline and the [Pysam](https://github.com/pysam-developers/pysam) (version 0.8.4) Python module is required.
 
 #### Dependencies:
 
@@ -138,14 +138,14 @@ TOPHAT_B2_OPT="--b2-very-sensitive"
 
 ## Generation of genomes and indexes
 
-Before performing mapping with any strategy, you can generate the missing files (genomes and indexes) corresponding to your `CONFIG` file with the following command:
+Before performing mapping with any strategy, you should generate the missing files (genomes and indexes) corresponding to your `CONFIG` file with the following command:
 
 ```bash
 ./build_genomes_indexes.sh -c CONFIG
 ```
 
-Generated files will be stored in the `G
-EN_OUT` directory and you will be able to run the script in parallel for this `CONFIG` file for different dataset. *Note that you do not need to fill in the `CONFIG` file again after generation of the different files.*
+Generated files will be stored in the `GEN_OUT` directory and you will be able to run the script in parallel for this `CONFIG` file for different dataset.
+*Note that you do not need to fill in the `CONFIG` file again after generation of the different files.*
 
 ## Mapping
 
@@ -162,7 +162,7 @@ You simply run the following command to perform mapping:
 
 
 ```bash
-./read_mapping.sh -f $FASTQ_F -r $FASTQ_R -o $OUT_DIR -c CONFIG
+./read_mapping.sh -f $FASTQ_F -r $FASTQ_R -o $OUT_DIR -n $OUT_NAME -c CONFIG
 ```
 
 ------------------------------
