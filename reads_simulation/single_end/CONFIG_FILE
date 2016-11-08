@@ -12,10 +12,10 @@
 bedtools=/bioinfo/local/build/BEDTools/BEDTools_2.21.0/bin/bedtools
 art=/bioinfo/users/khillion/Tools/ART/art/art_illumina
 samtools=/bioinfo/local/build/samtools/samtools/bin/samtools
-SNPsplit_gen=/bioinfo/users/khillion/GIT/SNPsplit/SNPsplit_genome_preparation
+SNPsplit_gen=/data/annotations/Mouse/personalized_genomes/SNPsplit/SNPsplit_genome_preparation
 
 # 	Path of the read simulation scripts
-simreads=/bioinfo/users/khillion/GIT/as-mapping/reads_simulation/single_end
+simreads=/bioinfo/users/khillion/bin/as-mapping/reads_simulation/single_end
 extract_SNPs=${simreads}/scripts/extract_snps.py
 
 
@@ -32,7 +32,7 @@ coverage=100
 regions=REGIONS_SELECTED.bed
 
 #   Directory containing every chromosomes of the reference genome at the fasta format (no "chr")
-ref_dir=/bioinfo/users/khillion/data/genomes/mm10/chromosomes
+ref_dir=/data/annotations/Mouse/mm10/chromosomes_Ensembl
 
 # 	VCF files
 #		 full_vcf : Contain SNPs of all different strains of mice
@@ -74,6 +74,7 @@ sequencer="HS20"	# The name of Illumina sequencing system :
 main_out=data/
 vcf_outdir=${main_out}/vcfs
 fasta_outdir=${main_out}/fastas
+bed_outdir=${main_out}/beds
 tmp_outdir=${main_out}/tmp
 
 #		Directory where the generated reads will be stored

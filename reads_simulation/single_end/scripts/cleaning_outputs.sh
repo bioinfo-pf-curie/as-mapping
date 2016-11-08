@@ -40,7 +40,7 @@ function usage {
 
 # Merging SAM files and converting to BAM
 echo -e "  |\t$(basename $0) : Rephasing SAM, merging files and converting to BAM ..."
-for sam in `ls ${art_outdir}*.sam`
+for sam in `ls ${art_outdir}/*.sam`
 do
 	# Get the information from every header to build a common header afterwards
 	${samtools} view -H ${sam} | grep '^@HD' >> ${art_outdir}/HD.tmp

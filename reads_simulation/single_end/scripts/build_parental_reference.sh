@@ -4,6 +4,17 @@
 # Comment(s) :
 #	build_parental_reference.sh : Script to generate the fasta sequence of a chromosome for a given strain
 
+#### Function #### ----------------------------------------------------------------------------------------------------------------
+
+# Get args
+function usage {
+    echo -e "Usage : $0"
+    echo -e "-i"" <name of the strain>"
+    echo -e "-c"" <Config file>"
+	echo -e "-h"" <help>"
+    exit
+}
+
 #### Parameters #### --------------------------------------------------------------------------------------------------------------
 
 while [ $# -gt 0 ] 
@@ -29,16 +40,6 @@ source ${config}
 # Temporary file
 tmp=${RANDOM}.tmp
 
-#### Function #### ----------------------------------------------------------------------------------------------------------------
-
-# Get args
-function usage {
-    echo -e "Usage : $0"
-    echo -e "-i"" <name of the strain>"
-    echo -e "-c"" <Config file>"
-	echo -e "-h"" <help>"
-    exit
-}
 
 #### Main #### --------------------------------------------------------------------------------------------------------------------
 
@@ -46,20 +47,35 @@ mkdir -p ${main_out} ${fasta_outdir}
  
 if [[ -z ${id_geno} ]]; then echo "Error : Please specify the name of the strain. Exit"; exit; fi
 
-# Run SNPsplit to generate parental genome
-${SNPsplit_gen} --no_nmasking --strain ${id_geno} --reference_genome ${ref_dir} --vcf_file ${full_vcf} 
 
-for i in `ls -d --color=never ${id_geno}_full_sequence/*`
-do  
-    if [[ $i =~ MT ]]
-    then
-        sed 's/>MT/>chrM/' ${i} >> ${fasta_outdir}/${id_geno}.fa
-    else
-        sed 's/>/>chr/' ${i} >> ${fasta_outdir}/${id_geno}.fa
-    fi
-done
+if [[ ${id_geno} == 'REF' ]]
+then
+    for i in `ls -d --color=never ${ref_dir}/*`
+    do  
+        if [[ $i =~ MT ]]
+        then
+            sed 's/>MT/>chrM/' ${i} >> ${fasta_outdir}/${id_geno}.fa
+        else
+            sed 's/>/>chr/' ${i} >> ${fasta_outdir}/${id_geno}.fa
+        fi
+    done
+else
+    # Run SNPsplit to generate parental genome
+    ${SNPsplit_gen} --no_nmasking --strain ${id_geno} --reference_genome ${ref_dir} --vcf_file ${full_vcf} 
 
-# Cleaning (Only paternal.fa is kept as both generated genomes should be identical due to the presence of only homozygous SNPs)
-mkdir -p reports/
-mv *.txt reports/
-rm -r ${id_geno}_full_sequence/ SNPs_*/ *.gz
+    for i in `ls -d --color=never ${id_geno}_full_sequence/*`
+    do  
+        if [[ $i =~ MT ]]
+        then
+            sed 's/>MT/>chrM/' ${i} >> ${fasta_outdir}/${id_geno}.fa
+        else
+            sed 's/>/>chr/' ${i} >> ${fasta_outdir}/${id_geno}.fa
+        fi
+    done
+    # Cleaning (Only paternal.fa is kept as both generated genomes should be identical due to the presence of only homozygous SNPs)
+    mkdir -p reports/
+    mv *.txt reports/
+    rm -r ${id_geno}_full_sequence/ SNPs_*/ *.gz
+fi
+
+
