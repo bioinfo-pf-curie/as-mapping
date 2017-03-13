@@ -174,4 +174,4 @@ Count table for allele-specific and total reads (common and specific) were gener
 ```
 
 **GENE** | **PARENT1** | **PARENT2**| **ALLELIC_RATIO: PARENT1/(PARENT1+PARENT2)**|**ALL_READS**|
--------- | ---------| ---------|-------------------------|--------|
+-------- | ---------| ---------|-------------------------|---------|
