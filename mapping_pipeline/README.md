@@ -167,11 +167,13 @@ You simply run the following command to perform mapping:
 
 ## Count table
 
-Count table for allele-specific and total reads (common and specific) were generated with FeatureCount tool.  
+Count table for allele-specific and total reads (common and specific) was generated with FeatureCount tool.  
+
+**GENE** | **PARENT1** | **PARENT2**| **ALLELIC_RATIO: PARENT1/(PARENT1+PARENT2)**|**ALL_READS**|
+-------- | ---------| ---------|----------------|---------|
 
 ```bash
 ./count_table.sh -b BAM_FILE -o OUT_DIR -n OUT_NAME -c CONFIG    
 ```
 
-**GENE** | **PARENT1** | **PARENT2**| **ALLELIC_RATIO: PARENT1/(PARENT1+PARENT2)**|**ALL_READS**|
--------- | ---------| ---------|-------------------------|---------|
+
