@@ -46,12 +46,9 @@ mkdir -p ${OUT_DIR}/count
 ${SAMTOOLS_DIR}/samtools view -h ${BAM_FILE} | grep -E '^@|XX:Z:G1' | ${SAMTOOLS_DIR}/samtools view -b - > ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}.bam
 ${SAMTOOLS_DIR}/samtools view -h ${BAM_FILE} | grep -E '^@|XX:Z:G2' | ${SAMTOOLS_DIR}/samtools view -b - > ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam
 
-# Allele-specific reads quantification
-${FEATURECOUNTS_DIR} ${FEATURECOUNTS_OPT} -a ${REF_GTF} -o ${OUT_DIR}/count/${OUT_NAME}_alleleSpe_count.txt ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}.bam ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam
-awk -F '\t' 'BEGIN{OFS="\t"; print "Gene", parent1, parent2, "allelicRatio_"parent1"/all"}{if($1!~/^#/ && $1!="Geneid" && ($7+$8>0)){OFS="\t"; print $1,$7,$8,$7/($7+$8)}}' ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}_alleleSpe_count.txt >  ${OUT_DIR}/count/${OUT_NAME}_allelicRatio.txt
-
-# All reads quantification
-${FEATURECOUNTS_DIR} ${FEATURECOUNTS_OPT} -a ${REF_GTF} -o ${OUT_DIR}/count/${OUT_NAME}_total_count.txt ${BAM_FILE}
+# Count for each gene
+${FEATURECOUNTS_DIR} ${FEATURECOUNTS_OPT} -a ${REF_GTF} -o ${OUT_DIR}/count/${OUT_NAME}_count.txt ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}.bam ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam ${BAM_FILE}
+awk -F '\t' 'BEGIN{OFS="\t"; print "Gene", parent1, parent2, "allelicRatio_"parent1"/all", "allReads"}{if($1!~/^#/ && $1!="Geneid" && ($7+$8>0)){OFS="\t"; print $1,$7,$8,$7/($7+$8),$9}}' ${OUT_DIR}/count/${OUT_NAME}_count.txt >  ${OUT_DIR}/count/${OUT_NAME}_allelicRatio.txt
 
 # Delete all temporary BAM files
 /bin/rm ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}.bam ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam 
