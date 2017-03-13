@@ -355,11 +355,11 @@ def comp_two_paired_alignments(dict_pair):
                 (dict_pair[genos[0]]["R1"].pnext == dict_pair[genos[1]]["R1"].pnext)):
                     # Same positions for both pairs
                     pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                    tag_selected_pair(pair,"UA")
+                    pair = tag_selected_pair(pair,"UA")
                 else:
                     # Ambiguous case, different positions with same score
                     pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                    tag_selected_pair(pair,"CF")
+                    pair = tag_selected_pair(pair,"CF")
             else:
                 # Only one read has been mapped in both case
                 if ((dict_pair[genos[0]]["R1"] is not None) & (dict_pair[genos[1]]["R1"] is not None)):
@@ -368,26 +368,26 @@ def comp_two_paired_alignments(dict_pair):
                     (dict_pair[genos[0]]["R1"].rname == dict_pair[genos[1]]["R1"].rname)):
                         # Same positions for both reads
                         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                        tag_selected_pair(pair,"UA")
+                        pair = tag_selected_pair(pair,"UA")
                     else:
                         # Ambiguous case, different positions with same score
                         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                        tag_selected_pair(pair,"CF")
+                        pair = tag_selected_pair(pair,"CF")
                 elif ((dict_pair[genos[0]]["R2"] is not None) & (dict_pair[genos[1]]["R2"] is not None)):
                     # R2 mapped for both
                     if ((dict_pair[genos[0]]["R2"].pos == dict_pair[genos[1]]["R2"].pos) & \
                     (dict_pair[genos[0]]["R2"].rname == dict_pair[genos[1]]["R2"].rname)):
                         # Same positions for both reads
                         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                        tag_selected_pair(pair,"UA")
+                        pair = tag_selected_pair(pair,"UA")
                     else:
                         # Ambiguous case, different positions with same score
                         pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                        tag_selected_pair(pair,"CF")
+                        pair = tag_selected_pair(pair,"CF")
                 else:
                     # Ambiguous cases
                     pair = [dict_pair[genos[0]]["R1"],dict_pair[genos[0]]["R2"]]
-                    tag_selected_pair(pair,"CF")
+                    pair = tag_selected_pair(pair,"CF")
     return pair
 
 def comp_three_paired_alignments(dict_pair):
@@ -569,10 +569,10 @@ if __name__ == "__main__":
 
     # Sort BAM file by name for analysis
     if (mapping_parental):
-        pysam.sort("-n",outdir + outname + MERGED_BAM + ".bam",outdir + outname + NSORTED_BAM)
+        pysam.sort("-n",outdir + outname + MERGED_BAM + ".bam","-o",outdir + outname + NSORTED_BAM + ".bam")
         os.remove(outdir + outname + MERGED_BAM + ".bam")
     elif (mapping_diploid):
-        pysam.sort("-n",diploid,outdir + outname + NSORTED_BAM)
+        pysam.sort("-n",diploid,"-o",outdir + outname + NSORTED_BAM + ".bam")
 
 
     ## == Selecting best position ==
