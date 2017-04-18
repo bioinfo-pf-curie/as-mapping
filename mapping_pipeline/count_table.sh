@@ -48,7 +48,8 @@ ${SAMTOOLS_DIR}/samtools view -h ${BAM_FILE} | grep -E '^@|XX:Z:G2' | ${SAMTOOLS
 
 # Count for each gene
 ${FEATURECOUNTS_DIR} ${FEATURECOUNTS_OPT} -a ${REF_GTF} -o ${OUT_DIR}/count/${OUT_NAME}_count.txt ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}.bam ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam ${BAM_FILE}
-awk -F '\t' 'BEGIN{OFS="\t"; print "Gene", parent1, parent2, "allelicRatio_"parent1"/all", "allReads"}{if($1!~/^#/ && $1!="Geneid" && ($7+$8>0)){OFS="\t"; print $1,$7,$8,$7/($7+$8),$9}}' ${OUT_DIR}/count/${OUT_NAME}_count.txt >  ${OUT_DIR}/count/${OUT_NAME}_allelicRatio.txt
+awk -F '\t' 'BEGIN{OFS="\t"; print "Gene", parent1, parent2, "allelicRatio_"parent1"/all", "allReads"}{if($1!~/^#/ && $1!="Geneid"){if($7+$8>0){as=$7/($7+$8)}else{as="NA"};print $1,$7,$8,as}' ${OUT_DIR}/count/${OUT_NAME}_count.txt >  ${OUT_DIR}/count/${OUT_NAME}_allelicRatio.txt
+
 
 # Delete all temporary BAM files
 /bin/rm ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}.bam ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam 

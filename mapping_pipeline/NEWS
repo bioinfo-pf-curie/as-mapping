@@ -1,0 +1,13 @@
+***********************************
+CHANGES IN VERSION 1.0.0
+
+NEW FEATURES
+
+   o Generate allele specific counts
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+   o as counts table now reports the same number of lines for all samples
+   
+BUG FIXES
+
