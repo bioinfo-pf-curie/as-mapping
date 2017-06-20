@@ -7,7 +7,7 @@ fig_width: 6
 fig_height: 6
 ---
 
-R --no-save --no-restore -e "outPath='./'; inPath='/data/kdi_prod/.kdi/project_workspace_0/650/acl/04.00/rna_analysis/results/ascount'; min_gene_cov='10'; gene.in='/data/kdi_prod/.kdi/project_workspace_0/650/acl/04.00/rna_analysis/annotations/Mus_musculus.NCBIM37.cleaned.gtf'; known.escapees='/data/kdi_prod/.kdi/project_workspace_0/650/acl/04.00/rna_analysis/annotations/escapees_Berletch.txt'; rmarkdown::render('as_analysis_report.Rmd', output_file='${ODIR}as_analysis_report.html')"
+R --no-save --no-restore -e "outPath='./'; inPath='/data/kdi_prod/.kdi/project_workspace_0/650/acl/04.00/rna_analysis/results/ascount'; min_gene_cov='10'; gene.in='/data/kdi_prod/.kdi/project_workspace_0/650/acl/04.00/rna_analysis/annotations/Mus_musculus.NCBIM37.cleaned.gtf'; known.escapees='./data/escapees_Berletch.txt'; rmarkdown::render('as_analysis_report.Rmd', output_file='${ODIR}as_analysis_report.html')"
 
 
 ```{r setup, include=FALSE}
@@ -55,17 +55,30 @@ require(gridExtra)
 ##
 ## Load gene annotation
 ##
-geneannot <- import(gene.in)
-geneannot <- sortSeqlevels(geneannot)
-geneannot <- sort(geneannot)
+require(GenomicFeatures)
+
+gtf.gr <- import(gene.in)
+gtf.gr <- sortSeqlevels(geneannot)
+gtf.gr <- sort(geneannot)
+
+txdb <- makeTxDbFromGFF(gene.in, format="gtf")
+geneannot <- genes(txdb)
+geneannot$gene_name <- gtf.gr$gene_name[match(geneannot$gene_id, gtf.gr$gene_id)]
 geneannot.perchr <- split(geneannot, seqnames(geneannot))
-xgenes <- unique(geneannot[which(seqnames(geneannot)=="X")]$"gene_name")
-autogenes <- unique(geneannot[which(seqnames(geneannot)!="X" & seqnames(geneannot) != "Y" & seqnames(geneannot) != "MT")]$"gene_name")
+xgenes <- unique(geneannot[grep("X", seqnames(geneannot))]$"gene_name")
+autogenes <- unique(geneannot[grep("X|Y|M",seqnames(geneannot), invert=TRUE)]$"gene_name")
+
+#geneannot <- import(gene.in)
+#geneannot <- sortSeqlevels(geneannot)
+#geneannot <- sort(geneannot)
+#geneannot.perchr <- split(geneannot, seqnames(geneannot))
+#xgenes <- unique(geneannot[which(seqnames(geneannot)=="X")]$"gene_name")
+#autogenes <- unique(geneannot[which(seqnames(geneannot)!="X" & seqnames(geneannot) != "Y" & seqnames(geneannot) != "MT")]$"gene_name")
 
 ##
 ## Load data from AS mapping pipeline
 ##
-exprs.in <- list.files(path=inPath, pattern="asratio.tsv$", full.names=TRUE)
+exprs.in <- list.files(path=inPath, pattern="asratio.tsv$", full.names=TRUE, recursive=TRUE)
 
 das <- lapply(exprs.in, function(f, mcov){
   z <- read.csv(f, sep="\t", row.names=1, comment.char="#")
@@ -86,28 +99,54 @@ Add stats file with counts
 
 ```{r, fig.height=6, fig.width=12, results="asis"}
 
-for (i in 1:length(das)){
-  cat('\n')  
-  cat("####", names(das)[i], "\n") 
+
+allst <- lapply(1:length(das), function(i){
   x  <- das[[i]]
   xa <- x[intersect(rownames(x), autogenes),]
-  p1 <- ggplot(as.data.frame(xa), aes(x=log2(genome1), y=log2(genome2))) + geom_point() + xlab("Genome 1") + ylab("Genome 2") + geom_abline(intercept=0, linetype="dashed") + annotate("text", label = "Autosomes", x=1, y = log2(max(xa$genome1)),  size = 4, colour = "darkgray")+ theme(axis.title = element_text(face="bold")) 
-  xx <- x[intersect(rownames(x), xgenes),]
-  p2 <- ggplot(as.data.frame(xx), aes(x=log2(genome1), y=log2(genome2), label=rownames(xx))) + geom_point() + xlab("Genome 1") + ylab("Genome 2") + geom_abline(intercept=0, linetype="dashed") + annotate("text", label = "X chromosome", x=2, y = log2(max(xa$genome1)),  size = 4, colour = "darkgray") + theme(axis.title = element_text(face="bold")) 
+  p <- ggplot(as.data.frame(xa), aes(x=log2(genome1+1), y=log2(genome2+1))) + geom_point() + xlab("Genome 1") + ylab("Genome 2") +
+      geom_abline(intercept=1, linetype="dashed") + annotate("text",label = "Autosomes", x=1, y = log2(max(xa$genome1)),  size = 4, colour = "darkgray")+
+          theme(axis.title = element_text(face="bold")) + ggtitle(names(das)[i])
+  return(p)
+})
+png(file.path(outPath, "scatter_ascounts_auto.png"), width=10, height=15, res=300, units="in")
+do.call("grid.arrange", c(allst, ncol=floor(sqrt(length(allst)))))
+dev.off()
+
+allst.X <- lapply(1:length(das), function(i){
+    x  <- das[[i]]
+    xx <- x[intersect(rownames(x), xgenes),]
+    
+    p <- ggplot(as.data.frame(xx), aes(x=log2(genome1+1), y=log2(genome2+1))) + geom_point() + xlab("Genome 1") + ylab("Genome 2") +
+        geom_abline(intercept=1, linetype="dashed") + annotate("text", label = "X chromosome", x=2, y = log2(max(xa$genome1)+1),  size = 4, colour = "darkgray") +
+            theme(axis.title = element_text(face="bold")) + ggtitle(names(das)[i])
+    return(p)
+})
+
+#png(file.path(outPath, "scatter_ascounts_onX.png"), width=10, height=15, res=300, units="in")
+do.call("grid.arrange", c(allst.X, ncol=floor(sqrt(length(allst.X)))))
+#dev.off()
+
+#for (i in 1:length(das)){
+#  cat('\n')  
+#  cat("####", names(das)[i], "\n") 
+#  x  <- das[[i]]
+#  xa <- x[intersect(rownames(x), autogenes),]
+#  p1 <- ggplot(as.data.frame(xa), aes(x=log2(genome1), y=log2(genome2))) + geom_point() + xlab("Genome 1") + ylab("Genome 2") + geom_abline(intercept=0, linetype="dashed") + annotate("text", label = "Autosomes", x=1, y = log2(max(xa$genome1)),  size = 4, colour = "darkgray")+ theme(axis.title = element_text(face="bold")) 
+#  xx <- x[intersect(rownames(x), xgenes),]
+#  p2 <- ggplot(as.data.frame(xx), aes(x=log2(genome1), y=log2(genome2), label=rownames(xx))) + geom_point() + xlab("Genome 1") + ylab("Genome 2") + geom_abline(intercept=0, linetype="dashed") + annotate("text", label = "X chromosome", x=2, y = log2(max(xa$genome1)),  size = 4, colour = "darkgray") + theme(axis.title = element_text(face="bold")) 
 
   #pdf(file.path(outPath, paste0(names(das)[i],"_scatter_ascounts.pdf")), width=12, height=6)
-  grid.arrange(p1, p2, ncol=2)
+#  grid.arrange(p1, p2, ncol=2)
   #dev.off()
-  cat('\n') 
-}
+#  cat('\n') 
+#}
+
 ```
 
 ###Boxplots of asratio per chromosome{.tabset}
+``{r, results="asis"}
 
-```{r, results="asis"}
-for (i in 1:length(das)){
-  cat('\n')  
-  cat("####", names(das)[i], "\n") 
+allbx <- lapply(1:length(das), function(i){
   df <- lapply(geneannot.perchr, function(gr, x){
     x[intersect(rownames(x), unique(gr$gene_name)),"ratio"]
   }, x=das[[i]])
@@ -118,14 +157,34 @@ for (i in 1:length(das)){
   d$grp <- factor(d$grp, levels=seqlevels(geneannot))
   
   p <- ggplot(d, aes(x = grp, y = x)) + geom_boxplot() + geom_hline(yintercept=0.5, linetype="dashed") +
-    xlab("") + ylab("AS ratio") + theme(axis.title = element_text(face="bold")) 
+    xlab("") + ylab("AS ratio") + theme(axis.title = element_text(face="bold")) + ggtitle(names(das)[i])
+  return(p)
+})
+
+#png(file.path(outPath, "boxplot_asratio.png"), width=15, height=15, res=300, units="in")
+do.call("grid.arrange", c(allbx, ncol=floor(sqrt(length(allbx)))))
+#dev.off()
+
+#for (i in 1:length(das)){
+#  cat('\n')  
+#  cat("####", names(das)[i], "\n") 
+#  df <- lapply(geneannot.perchr, function(gr, x){
+#    x[intersect(rownames(x), unique(gr$gene_name)),"ratio"]
+#  }, x=das[[i]])
+#  names(df) <- names(geneannot.perchr)
+ 
+#  d <- data.frame(x = unlist(df), 
+#                grp = rep(names(df), times=sapply(df, length)))
+#  d$grp <- factor(d$grp, levels=seqlevels(geneannot))
+  
+#  p <- ggplot(d, aes(x = grp, y = x)) + geom_boxplot() + geom_hline(yintercept=0.5, linetype="dashed") +
+#    xlab("") + ylab("AS ratio") + theme(axis.title = element_text(face="bold")) 
 
   #pdf(file.path(outPath, paste0(names(das)[i],"_boxplot_asratio.pdf")), width=7, height=7)
-  print(p)
+#  print(p)
   #dev.off()
-  cat('\n') 
-
-}
+#  cat('\n') 
+#}
 
 ##
 ## Binom test ?
@@ -193,7 +252,6 @@ asHeatmap(das, kes, show.values=TRUE)
 ####Escapees
 
 ```{r, fig.height=15, fig.width=4}
-
 ##
 ## Heatmap of all escapees in at least one sample
 ## AS > .15 && AS < .85
@@ -205,6 +263,7 @@ allXesc <- Reduce(union, lapply(das, function(xx, k){
 }, k=xgenes))
 
 #pdf(file.path(outPath, paste0(names(das)[i],"_heatmap_Xescapees.pdf")), width=4, height=15)
-print(asHeatmap(x=das, genes.list=allXesc, show.values=TRUE, intersect=FALSE))
+asHeatmap(x=das, genes.list=allXesc, show.values=TRUE, intersect=FALSE)
 #dev.off()
 ```
+
