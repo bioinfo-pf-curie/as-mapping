@@ -13,13 +13,13 @@
 # Required installed tools
 PYTHON=/bioinfo/local/build/python/python-2.7.9/bin/python2.7
 SAMTOOLS_DIR=/bioinfo/local/build/samtools/samtools-1.3/bin
-SNPSPLIT_DIR=/data/annotations/Mouse/personalized_genomes/SNPsplit
+SNPSPLIT_DIR=/bioinfo/local/curie/ngs-data-analysis/SNPsplit_v0.3.2
 BOWTIE2_DIR=/bioinfo/local/build/bowtie2/bowtie2-2.2.5
 TOPHAT_DIR=/bioinfo/local/build/tophat/tophat-2.1.0
 FEATURECOUNTS_DIR=/bioinfo/local/build/subread-1.5.1/bin/featureCounts
 
 # Local scripts: Paths to the directory with the different scripts
-PIPELINE_PATH=/bioinfo/users/khillion/GIT_dev/as-mapping_DEV/20161017_correction/mapping_pipeline
+PIPELINE_PATH=/bioinfo/local/curie/ngs-data-analysis/as-mapping_1.2.0/mapping_pipeline
 
 # ------------ Input(s) ------------
 
@@ -39,7 +39,10 @@ REF_DIR=/data/annotations/Mouse/mm10/chromosomes_Ensembl/
 REF_GTF=/data/kdi_prod/.kdi/project_workspace_0/1142/acl/01.00/annotations/genes/mm10_refFlat_12122016.gtf
 
 # Strain specific informations (use REF for reference)
+##Ref in SNP_FILE
 ID_GENO1=CAST_EiJ
+
+##Alt in SNP_FILE
 ID_GENO2=129S1_SvImJ
 
 # Selected strategies:

@@ -1,4 +1,14 @@
 ***********************************
+CHANGES IN VERSION 1.2.0
+
+NEW FEATURES
+   
+BUG FIXES
+
+   o Add a minimum of 1 read to calculate the threshold
+   o For N-masked mapping, use genome1 and genome2 BAM files with FeatureCounts
+
+***********************************
 CHANGES IN VERSION 1.1.0
 
 NEW FEATURES
