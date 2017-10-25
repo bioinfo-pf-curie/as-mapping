@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     ## Allele-specific count (per SNP)
     countTable = open(str(output_dir) + str(outname) + ".data", "w")
-    countTable.write("\t".join(map(str,["chromosome", "start", "end", "gene","strand","total", str(geno1)+"_base", str(geno1)+"_count", str(geno2)+"_base", str(geno2)+"_count", "otherCount", "otherBase"]))+"\n")
+    countTable.write("\t".join(map(str,["chromosome", "start", "end", "total", str(geno1)+"_base", str(geno1)+"_count", str(geno2)+"_base", str(geno2)+"_count", "otherCount", "otherBase"]))+"\n")
 
     snpCount = alleleCount(r1)
     vcfDict = getGenotypes(vcf)
