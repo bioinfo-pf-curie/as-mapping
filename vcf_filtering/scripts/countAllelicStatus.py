@@ -58,8 +58,8 @@ def get_acgt(samfile, chromosome, start, end):
                     #print pileupread.alignment.query_name, pileupread.query_position
                 if not pileupread.is_del and not pileupread.is_refskip:
                     base = pileupread.alignment.query_sequence[pileupread.query_position]
-                    dcounts['tot']+=1
                     if base.upper() in dcounts.keys():
+                        dcounts['tot']+=1
                         dcounts[base.upper()]+=1
     return(dcounts)
 
@@ -71,9 +71,12 @@ def is_hetero(basecounts, ref, alt):
     r=float(basecounts[ref])/float(tra)
     ht=float(tra)/basecounts['tot']
 
+    ##print(r, ht)
+
     if r >= 0.2 and r <= 0.8 and ht > 0.8:
         return True
     else:
+        
         return False
 
 mindepth=5
@@ -147,8 +150,8 @@ if __name__ == "__main__":
             if basecounts['tot'] >= mindepth and is_hetero(basecounts, ref, alt) :
                 print str(chrom) + "\t" + str(start+1) + "\t" + str(ref) + "," + str(alt) + "\t" + str(basecounts[ref]) + "," + str(basecounts[alt]) + "\t" + str(basecounts['tot'])
 
-            #if basecounts['tot'] >= mindepth and not is_hetero(basecounts, ref, alt) :
-            #    print(chrom, start+1, basecounts['tot'], ref, alt, basecounts, "REJECTED")
+            ##if basecounts['tot'] >= mindepth and not is_hetero(basecounts, ref, alt) :
+            ##    print(chrom, start+1, basecounts['tot'], ref, alt, basecounts, "REJECTED")
 
         ## verbose 
         if (var_counter % 100000 == 0 and verbose):
