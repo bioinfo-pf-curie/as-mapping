@@ -153,7 +153,7 @@ ${PYTHON} ${CUR_DIR}/scripts/alleleCount.py -f ${ODIR}/${prefix}_covInfo.data -v
 
 # Heterozygous SNPs - 0.25/0.75 for expected alleles + others < 10% + total >= 10
 awk -F '\t' -v mincounts=$MIN_COV '(NR>1){OFS="\t"; totalCount=$4+$9; if(totalCount>=mincounts && $4 > 0){print $1, $2, $3, totalCount, $6/$4, $8/$4, $9/totalCount}}' ${ODIR}/${prefix}_SNPInfo.data  | \
-    awk -F '\t' -v htmin=$HT_MIN -v htmax=$HT_MAX -v maxconta=$MAX_CONTA '($1!="chrY" && $1!="chrM" && $7<maxconta && $5>=htmin && $5<=htmax){OFS="\t"; print $1,$2,$3}' > ${ODIR}/${prefix}.bed
+    awk -F '\t' -v htmin=$ht_min -v htmax=$ht_max -v maxconta=$MAX_CONTA '($1!="chrY" && $1!="chrM" && $7<maxconta && $5>=htmin && $5<=htmax){OFS="\t"; print $1,$2,$3}' > ${ODIR}/${prefix}.bed
 
 # Generate the clean SNP file
  awk -F '\t' '(NR>1){OFS="\t"; print $1, $2-1, $2, $3, $4}' ${ODIR}/${prefix}_SNPlist.txt | ${BEDTOOLS_DIR}/intersectBed -a stdin -b ${ODIR}/${prefix}.bed -wa | \
