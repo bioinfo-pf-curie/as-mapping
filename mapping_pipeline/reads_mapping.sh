@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Author(s) : Kenzo-Hugo Hillion
-# Contact : kenzo.hillion@curie.fr
 # Comment(s) : Main part of the mapping pipeline
 
 #### Function #### ----------------------------------------------------------------------
@@ -15,7 +14,6 @@ function usage {
     echo -e "-h"" <help>"
     exit
 }
-
 
 #### Parameters #### --------------------------------------------------------------------
 
@@ -49,10 +47,20 @@ if [[ ${MAP_REF} -eq 1 ]]
 then
     if [[ ${MAPPER} == 'BOWTIE2' ]]
     then
-        ${MAPPING_REFERENCE_B2} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        if [[ -e ${FQ_READS_R} ]]
+        then
+            ${MAPPING_REFERENCE_B2} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        else
+            ${MAPPING_REFERENCE_B2} -f $FQ_READS_F -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        fi
     elif [[ ${MAPPER} == 'TOPHAT' ]]
     then
-        ${MAPPING_REFERENCE_TOPHAT} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        if [[ -e ${FQ_READS_R} ]]
+        then
+            ${MAPPING_REFERENCE_TOPHAT} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        else
+            ${MAPPING_REFERENCE_TOPHAT} -f $FQ_READS_F -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        fi
     else
         echo "$0: WARNING - The selected mapper [${MAPPER}] does not exist." 1>&2
         echo "$0: WARNING - Mapping to reference genome SKIPPED." 1>&2
@@ -63,10 +71,20 @@ if [[ ${MAP_N} -eq 1 ]]
 then
     if [[ ${MAPPER} == 'BOWTIE2' ]]
     then
-        ${MAPPING_NMASKED_B2} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        if [[ -e ${FQ_READS_R} ]]
+        then
+            ${MAPPING_NMASKED_B2} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+	    else
+            ${MAPPING_NMASKED_B2} -f $FQ_READS_F -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        fi
     elif [[ ${MAPPER} == 'TOPHAT' ]]
     then
-        ${MAPPING_NMASKED_TOPHAT} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        if [[ -e ${FQ_READS_R} ]]
+        then
+            ${MAPPING_NMASKED_TOPHAT} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        else
+            ${MAPPING_NMASKED_TOPHAT} -f $FQ_READS_F -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        fi
     else
         echo "$0: WARNING - The selected mapper [${MAPPER}] does not exist." 1>&2
         echo "$0: WARNING - Mapping to N-masked genome SKIPPED." 1>&2
@@ -74,31 +92,51 @@ then
 fi
 
 if [[ ${MAP_PAR} -eq 1 ]]
-then 
+then
     if [[ ${MAPPER} == 'BOWTIE2' ]]
     then
-        ${MAPPING_PARENTAL_B2} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        if [[ -e ${FQ_READS_R} ]]
+        then
+            ${MAPPING_PARENTAL_B2} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        else
+            ${MAPPING_PARENTAL_B2} -f $FQ_READS_F -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        fi
     elif [[ ${MAPPER} == 'TOPHAT' ]]
     then
-        ${MAPPING_PARENTAL_TOPHAT} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        if [[ -e ${FQ_READS_R} ]]
+        then
+            ${MAPPING_PARENTAL_TOPHAT} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        else
+            ${MAPPING_PARENTAL_TOPHAT} -f $FQ_READS_F -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        fi
     else
         echo "$0: WARNING - The selected mapper [${MAPPER}] does not exist." 1>&2
         echo "$0: WARNING - Mapping to parental genomes SKIPPED." 1>&2
     fi
-fi 
+fi
 
 if [[ ${MAP_DIP} -eq 1 ]]
 then
     if [[ ${MAPPER} == 'BOWTIE2' ]]
     then
-        ${MAPPING_DIPLOID_B2} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        if [[ -e ${FQ_READS_R} ]]
+        then
+            ${MAPPING_DIPLOID_B2} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        else
+            ${MAPPING_DIPLOID_B2} -f $FQ_READS_F -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        fi
     elif [[ ${MAPPER} == 'TOPHAT' ]]
     then
-        ${MAPPING_DIPLOID_TOPHAT} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        if [[ -e ${FQ_READS_R} ]]
+        then
+            ${MAPPING_DIPLOID_TOPHAT} -f $FQ_READS_F -r $FQ_READS_R -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        else
+            ${MAPPING_DIPLOID_TOPHAT} -f $FQ_READS_F -o $OUT_DIR -n $OUT_NAME -c $CONFIG
+        fi
     else
         echo "$0: WARNING - The selected mapper [${MAPPER}] does not exist." 1>&2
         echo "$0: WARNING - Mapping to diploid genome SKIPPED." 1>&2
     fi
 fi
 
-exit 0 
+exit 0
