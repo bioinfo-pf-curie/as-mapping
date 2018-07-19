@@ -54,7 +54,7 @@ ${SAMTOOLS_DIR}/samtools view -h ${BAM_FLAGGED} | grep -E '^@|XX:Z:G1' | ${SAMTO
 ${SAMTOOLS_DIR}/samtools view -h ${BAM_FLAGGED} | grep -E '^@|XX:Z:G2' | ${SAMTOOLS_DIR}/samtools view -b - > ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam
 
 # Count for each gene
-${FEATURECOUNTS_DIR} ${FEATURECOUNTS_OPT} -a ${REF_GTF} -o ${OUT_DIR}/count/${OUT_NAME}_count.txt ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}.bam ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam ${BAM_FILE}
+${FEATURECOUNTS_DIR} ${FEATURECOUNTS_OPT} -a ${REF_GTF} -o ${OUT_DIR}/count/${OUT_NAME}_count.txt ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO1}.bam ${OUT_DIR}/count/${OUT_NAME}_${ID_GENO2}.bam ${BAM_FLAGGED}
 awk -F '\t' -v parent1=${ID_GENO1} -v parent2=${ID_GENO2} -v threshold=${READS_THRESHOLD} 'BEGIN{OFS="\t"; print "Gene", parent1, parent2, "allelicRatio_"parent1"/all", "allReads"}{if($1!~/^#/ && $1!="Geneid"){if($7+$8>0 && $7+$8>=threshold){as=$7/($7+$8)}else{as="NA"};print $1,$7,$8,as,$9}}' ${OUT_DIR}/count/${OUT_NAME}_count.txt >  ${OUT_DIR}/count/${OUT_NAME}_allelicRatio.txt
 fi
 
