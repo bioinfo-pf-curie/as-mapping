@@ -30,12 +30,12 @@ def helpMessage() {
     }
 
     log.info """
-    rnaseq v${workflow.manifest.version}
+    as-mapping v${workflow.manifest.version}
     ======================================================================
 
     Usage:
-    nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --genome hg19 -profile conda
-    nextflow run main.nf --samplePlan sample_plan --genome hg19 -profile conda
+    nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --genome mm9 -profile conda
+    nextflow run main.nf --samplePlan sample_plan --genome mm9 -profile conda
 
 
     Mandatory arguments:
@@ -47,8 +47,12 @@ def helpMessage() {
     Sequencing:
       --singleEnd                   Specifies that the input is single end reads
 
+    Genotype:
+      --maternal
+      --paternal
+
     Mapping:
-      --strategy 'STRATEGY'         
+      --nmask
       --aligner 'MAPPER'            Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
 
     References:                     If not specified in the configuration file or you wish to overwrite any of the references.
@@ -95,17 +99,6 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
    exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
-// Reference index path configuration
-// Define these here - after the profiles are loaded with the genomes paths
-params.star_index = params.genome ? params.genomes[ params.genome ].star ?: false : false
-params.bowtie2_index = params.genome ? params.genomes[ params.genome ].bowtie2 ?: false : false
-params.hisat2_index = params.genome ? params.genomes[ params.genome ].hisat2 ?: false : false
-
-// Tools option configuration
-// Add here the list of options that can change from a reference genome to another
-if (params.genome){
-  params.star_options = params.genomes[ params.genome ].star_opts ?: params.star_opts
-}
 // Has the run name been specified by the user?
 // this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -121,42 +114,9 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
  * CHANNELS
  */
 
-// Validate inputs
-if (params.aligner != 'star' && params.aligner != 'hisat2' && params.aligner != 'tophat2'){
-    exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'hisat2', 'tophat2'"
-}
-if (params.counts != 'star' && params.counts != 'featureCounts' && params.counts != 'HTseqCounts'){
-    exit 1, "Invalid counts option: ${params.counts}. Valid options: 'star', 'featureCounts', 'HTseqCounts'"
-}
-if (params.counts == 'star' && params.aligner != 'star'){
-    exit 1, "Cannot run STAR counts without STAR aligner. Please check the '--aligner' and '--counts' parameters."
-}
-if (params.stranded != 'auto' && params.stranded != 'reverse' && params.stranded != 'forward' && params.stranded != 'no'){
-    exit 1, "Invalid stranded option: ${params.stranded}. Valid options: 'auto', 'reverse', 'forward', 'no'"
-}
-
-if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePlan)){
-   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameter. Please choose one way"
-}
-
-if( params.star_index && params.aligner == 'star' ){
-    star_index = Channel
-        .fromPath(params.star_index)
-        .ifEmpty { exit 1, "STAR index not found: ${params.star_index}" }
-}
-else if ( params.hisat2_index && params.aligner == 'hisat2' ){
-    hs2_indices = Channel
-        .fromPath("${params.hisat2_index}*")
-        .ifEmpty { exit 1, "HISAT2 index not found: ${params.hisat2_index}" }
-}
-else if ( params.bowtie2_index && params.aligner == 'tophat2' ){
-    Channel.fromPath("${params.bowtie2_index}*")
-        .ifEmpty { exit 1, "TOPHAT2 index not found: ${params.bowtie2_index}" }
-        .set { tophat2_indices}
-}
-else {
-    exit 1, "No reference genome specified!"
-}
+Channel.fromPath("${params.genome}")
+       .ifEmpty { exit 1, "Reference Genome not found: ${params.genome}" }
+       .set { fastaGenome }
 
 if ( params.metadata ){
    Channel
@@ -296,6 +256,30 @@ log.info "========================================="
 
 
 
+/*
+ * Prepare Genome
+ */
+
+
+process prepareReferenceGenome {
+
+  input:
+  file reference from fastaGenome.collect()
+
+  output:
+  file "*.fa" into referenceGenome
+
+  if (params.nmask){
+  """
+  SNPsplit_genome_preparation --strain ${params.paternal} --strain2 ${params.maternal} --reference_genome ${REF_DIR} --vcf_file ${VCF} --nmasking
+  """
+  }else{
+  script:
+  """
+  SNPsplit_genome_preparation --strain ${params.paternal} --strain2 ${params.maternal} --reference_genome ${REF_DIR} --vcf_file ${VCF} --no_nmasking
+  """
+  }
+}
 
 /*
  * MultiQC
@@ -307,7 +291,7 @@ process get_software_versions {
 
   script:
   """
-  echo $workflow.manifest.version &> v_rnaseq.txt
+  echo $workflow.manifest.version &> v_main.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
   fastqc --version &> v_fastqc.txt
   STAR --version &> v_star.txt
