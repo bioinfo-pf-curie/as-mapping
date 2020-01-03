@@ -50,16 +50,17 @@ def helpMessage() {
     Genotype:
       --maternal
       --paternal
+      --nmask
+      --asfasta
+      --saveReference               Save the reference files - not done by default
+
 
     Mapping:
-      --nmask
-      --aligner 'MAPPER'            Tool for read alignments ['star', 'hisat2', 'tophat2']. Default: 'star'
-
-    References:                     If not specified in the configuration file or you wish to overwrite any of the references.
-      --star_index 'PATH'           Path to STAR index
-      --hisat2_index 'PATH'         Path to HiSAT2 index
-      --tophat2_index 'PATH'        Path to TopHat2 index
-      --saveAlignedIntermediates    Save the intermediate files from the Aligment step  - not done by default
+      --aligner 'MAPPER'            Tool for read alignments ['star', 'bowtie2', 'hisat2', 'tophat2']. Default: 'star'
+      --starIndex 'PATH'            Path to STAR index
+      --bowtie2Index 'PATH'         Path to Bowtie2 index
+      --hisat2Index 'PATH'          Path to HISAT2 index
+      --tophat2Index 'PATH'         Path to TopHat2 index
 
     Other options:
       --metadata 'FILE'             Add metadata file for multiQC report
@@ -99,6 +100,12 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
    exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
+// Reference index path configuration
+// Define these here - after the profiles are loaded with the genomes paths
+params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
+params.vcf = params.genome ? params.genomes[ params.genome ].vcf ?: false : false
+params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
+
 // Has the run name been specified by the user?
 // this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -114,9 +121,63 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
  * CHANNELS
  */
 
-Channel.fromPath("${params.genome}")
-       .ifEmpty { exit 1, "Reference Genome not found: ${params.genome}" }
-       .set { fastaGenome }
+// Reference Genome
+// Can be one or two reference genomes for nmak/parental reporting
+
+if (params.asfasta ){
+  Channel.from( params.asfasta )
+         .splitCsv()
+         .flatten()
+         .map { file(it) }
+         .into { genomeFastaStar; genomeFastaBowtie2; genomeFastaHisat2 }
+}else if (params.fasta){
+  Channel.fromPath("${params.fasta}")
+         .ifEmpty { exit 1, "Reference Genome not found: ${params.fasta}" }
+         .into { fastaGenomeParental; fastaGenomeNmask }
+}
+
+// Genome index
+// Can be one or two indexes for nmask/parental mapping
+
+if ( params.starIndex ){
+  Channel.from( params.starIndex )
+         .splitCsv()
+         .flatten()
+         .map { file(it) }
+         .set { starIdx }
+}else if ( params.bowtie2Index ){
+  Channel.from( params.bowtie2Index )
+         .splitCsv()
+         .flatten()
+         .map { it.substring(0,it.lastIndexOf(File.separator)+1) }
+         .set { bowtie2Idx }
+}else if (params.hisat2Index ){
+  Channel.from( params.hisat2Index )
+         .splitCsv()
+         .flatten()
+         .map { it.substring(0,it.lastIndexOf(File.separator)+1) }
+         .set { hisat2Idx }
+}
+
+
+// Variant information
+
+if (params.vcf){
+  Channel.fromPath("${params.vcf}")
+         .ifEmpty { exit 1, "Variant database not found: ${params.vcf}" }
+         .into { vcfGenomeParental; vcfGenomeNmask }
+}
+
+// GTF (for RNA-seq only)
+
+if( params.gtf ){
+    Channel
+        .fromPath(params.gtf)
+        .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
+        .into { gtfStarIndex; gtfStar; gtfHisat2Splicesites; gtfHisat2; gtfHisat2Index; gtfTophat2 }
+}
+
+// Addition reporting information
 
 if ( params.metadata ){
    Channel
@@ -126,7 +187,7 @@ if ( params.metadata ){
 }
 
 /*
- * Create a channel for input read files
+ * Create channels for input read files
  */
 
 if(params.samplePlan){
@@ -135,13 +196,13 @@ if(params.samplePlan){
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[0], [file(row[2])]] }
-         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
+         .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
    }else{
       Channel
          .from(file("${params.samplePlan}"))
          .splitCsv(header: false)
          .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-         .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
+         .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
    }
    params.reads=false
 }
@@ -151,19 +212,19 @@ else if(params.readPaths){
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
+            .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
     } else {
         Channel
             .from(params.readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
+            .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
     }
 } else {
     Channel
         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-        .into { raw_reads_fastqc; raw_reads_star; raw_reads_hisat2; raw_reads_tophat2; raw_reads_rna_mapping; raw_reads_prep_rseqc; raw_reads_strandness; save_strandness}
+        .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
 }
 
 /*
@@ -206,7 +267,6 @@ if (params.samplePlan){
    }
 }
 
-
 // Header log info
 if ("${workflow.manifest.version}" =~ /dev/ ){
    dev_mess = file("$baseDir/assets/dev_message.txt")
@@ -230,15 +290,15 @@ summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Genome']       = params.genome
 if(params.aligner == 'star'){
   summary['Aligner'] = "star"
-  if(params.star_index) summary['STAR Index'] = params.star_index
+  if(params.starIndex) summary['STAR Index'] = params.starIndex
 } else if(params.aligner == 'tophat2') {
   summary['Aligner'] = "Tophat2"
-  if(params.bowtie2_index) summary['Tophat2 Index'] = params.bowtie2_index
+  if(params.bowtie2Index) summary['Tophat2 Index'] = params.bowtie2Index
 } else if(params.aligner == 'hisat2') {
   summary['Aligner'] = "HISAT2"
-  if(params.hisat2_index) summary['HISAT2 Index'] = params.hisat2_index
+  if(params.hisat2Index) summary['HISAT2 Index'] = params.hisat2Index
 }
-summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
+summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
 summary['Max Time']       = params.max_time
@@ -257,34 +317,357 @@ log.info "========================================="
 
 
 /*
- * Prepare Genome
+ * PREPROCESSING - Prepare Genome
  */
 
+if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisat2Index){
+  process prepareReferenceGenome {
+    publishDir "${params.outdir}/reference_genome", mode: 'copy',
+        saveAs: {filename ->
+                 if (filename.indexOf("_report.txt") > 0) "logs/$filename"
+                 else if (params.saveReference) filename
+                 else null
+                }
 
-process prepareReferenceGenome {
+    input:
+    file reference from fastaGenomeParental.collect()
+    file vcf from vcfGenomeParental.collect()
 
-  input:
-  file reference from fastaGenome.collect()
-
-  output:
-  file "*.fa" into referenceGenome
-
-  if (params.nmask){
-  """
-  SNPsplit_genome_preparation --strain ${params.paternal} --strain2 ${params.maternal} --reference_genome ${REF_DIR} --vcf_file ${VCF} --nmasking
-  """
-  }else{
-  script:
-  """
-  SNPsplit_genome_preparation --strain ${params.paternal} --strain2 ${params.maternal} --reference_genome ${REF_DIR} --vcf_file ${VCF} --no_nmasking
-  """
+    output:
+    file("*_report.txt") into parentalGenomeReport
+    file("*genome.fa") into (genomeFastaStar, genomeFastaBowtie2, genomeFastaHisat2)
+  
+    script:
+    if (params.maternal && params.paternal){
+      opts_strain = "--strain ${params.paternal} --strain2 ${params.maternal}"
+    }else{
+      opts_strain = params.maternal ? " --strain ${params.maternal}" : "--strain ${params.paternal}" 
+    }
+    if (!params.nmask){
+    """
+    SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} --no_nmasking
+    cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
+    cat ${params.maternal}_full_sequence/*.fa > ${params.maternal}_maternal_genome.fa
+    """
+    }else{
+    """
+    SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
+    cat *dual_hybrid*_N-masked/*.fa > ${params.maternal}_${params.paternal}_nmask_genome.fa
+    """
+    }
   }
 }
+
+/*
+ * PREPROCESSING - Build Index
+ */ 
+
+if ( params.aligner == 'star' && !params.starIndex ){
+  process makeStarIndex {
+    publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
+       saveAs: {filename -> if (params.saveReference) filename else null }
+
+    input:
+    file(fasta) from genomeFastaStar.flatten()
+    file gtf from gtfStarIndex.collect()
+
+    output:
+    file "*STAR_index" into starIdx
+
+    script:
+    strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    //avail_mem = task.memory ? "--limitGenomeGenerateRAM ${task.memory.toBytes() - 100000000}" : ''
+    // --sjdbGTFfile $gtf $avail_mem
+    """
+    mkdir -p ${strainPrefix}_STAR_index
+    STAR --runMode genomeGenerate --runThreadN ${task.cpus} --genomeDir ${strainPrefix}_STAR_index --genomeFastaFiles $fasta
+    """
+  }
+}
+
+
+if ( (params.aligner == "bowtie2" || params.aligner == "tophat2") && !params.bowtie2Index ){
+  process makeBowtie2Index {
+    publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
+       saveAs: {filename -> if (params.saveReference) filename else null }
+
+    input:
+    file(fasta) from genomeFastaBowtie2.flatten()
+
+    output:
+    file("*bowtie2_index") into bowtie2Idx
+
+    script:
+    strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    bwt2_base = fasta.toString() - ~/(\.fa)?(\.fasta)?(\.fas)?$/
+    """
+    mkdir -p ${strainPrefix}_bowtie2_index
+    bowtie2-build ${fasta} ${strainPrefix}_bowtie2_index/${bwt2_base}
+    """
+  }
+}
+
+if ( params.aligner == 'hisat2' && !params.hisat2Index ){
+  process makeHisat2Splicesites {
+    publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
+       saveAs: {filename -> if (params.saveReference) filename else null }
+
+    input:
+    file gtf from gtfHisat2Splicesites.collect()
+
+    output:
+    file "${gtf.baseName}.hisat2_splice_sites.txt" into indexingSplicesites, alignmentSplicesites
+
+    script:
+    """
+    hisat2_extract_splice_sites.py $gtf > ${gtf.baseName}.hisat2_splice_sites.txt
+    """
+  }
+
+  process makeHisat2Index {
+    publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
+         saveAs: {filename -> if (params.saveReference) filename else null }
+
+    input:
+    file fasta from genomeFastaHisat2.flatten()
+    file indexing_splicesites from indexingSplicesites
+    file gtf from gtfHisat2Index
+
+    output:
+    file "${fasta.baseName}.*.ht2*" into hisat2Idx
+
+    script:
+    if (!task.memory) {
+      log.info "[HISAT2 index build] Available memory not known - defaulting to 0. Specify process memory requirements to change this."
+      avail_mem = 0
+    } else {
+      log.info "[HISAT2 index build] Available memory: ${task.memory}"
+      avail_mem = task.memory.toGiga()
+    }
+    if (avail_mem > params.hisat_build_memory) {
+      log.info "[HISAT2 index build] Over ${params.hisat_build_memory} GB available, so using splice sites and exons in HISAT2 index"
+      extract_exons = "hisat2_extract_exons.py $gtf > ${gtf.baseName}.hisat2_exons.txt"
+      ss = "--ss $indexing_splicesites"
+      exon = "--exon ${gtf.baseName}.hisat2_exons.txt"
+    } else {
+      log.info "[HISAT2 index build] Less than ${params.hisat_build_memory} GB available, so NOT using splice sites and exons in HISAT2 index."
+      log.info "[HISAT2 index build] Use --hisat_build_memory [small number] to skip this check."
+      extract_exons = ''
+      ss = ''
+      exon = ''
+    }
+    """
+    $extract_exons
+    hisat2-build -p ${task.cpus} $ss $exon $fasta ${fasta.baseName}.hisat2_index
+    """
+  }
+}
+
+
+/*
+ * MAPPING
+ */
+
+// STAR
+if ( params.aligner == 'star' ){
+  process starAlign {
+    tag "$prefix"
+    publishDir "${params.outdir}/mapping", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".bam") == -1) "logs/$filename"
+            else filename}
+
+    input:
+    set val(prefix), file(reads) from rawReadsStar
+    file index from starIdx
+    file gtf from gtfStar.collect().ifEmpty([])
+
+    output:
+    set val(prefix), file ("*Log.final.out"), file ('*.bam') into starBam
+    file "*.out" into starLogs
+
+    script:
+    //def gtfOpts = params.gtf ? "--sjdbGTFfile $gtf" : ''
+    def gtfOpts = ""
+    def mandatoryOpts = "--alignEndsType EndToEnd --outSAMattributes NH HI NM MD --outSAMtype BAM Unsorted"
+    """
+    STAR --genomeDir $index \\
+       ${gtfOpts} \\
+       ${mandatoryOpts} \\
+       --readFilesIn $reads  \\
+       --runThreadN ${task.cpus} \\
+       --runMode alignReads \\
+       --readFilesCommand zcat \\
+       --runDirPerm All_RWX \\
+       --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
+       --outFileNamePrefix $prefix  \\
+       --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
+    """
+  }
+}
+
+// Bowtie2
+
+if ( params.aligner == 'bowtie2' ){
+  process bowtie2Align {
+    tag "$prefix"
+    publishDir "${params.outdir}/mapping", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".bam") == -1) "logs/$filename"
+            else filename}
+
+    input:
+    set val(sample), file(reads) from rawReadsBowtie2
+    file index from bowtie2Idx
+
+    output:
+    set val(prefix), file("${prefix}.bam") into bowtie2bam
+
+    script:
+    prefix = reads.toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
+    genomeBase = index[0].toString() - ~/(\.rev)?(.\d.bt2)/
+    if (params.singleEnd){
+    """
+    bowtie2 --very-sensitive --end-to-end --reorder -D 70 -R 3 -N 0 -L 20 -i S,1,0.50 \\
+            --rg-id BMG --rg SM:${prefix} \\
+            -p ${task.cpus} \\
+            -x ${index}/${genomeBase} \\
+            --un ${prefix}_unmap.fastq \\
+            -U ${reads} | samtools view -bS - > ${prefix}.bam
+    """
+    }else{
+    """
+    bowtie2 --very-sensitive --end-to-end --reorder -D 70 -R 3 -N 0 -L 20 -i S,1,0.50 \\
+            --rg-id BMG --rg SM:${prefix} \\
+            -p ${task.cpus} \\
+            -x ${index}/${genomeBase} \\
+            -1 ${reads}[0] -2 ${reads}[1] | samtools view -bS - > ${prefix}.bam
+    """
+    }
+  }
+}
+
+
+/*
+
+// HiSat2
+
+if ( params.aligner == 'hisat2' ){
+  process hisat2Align {
+    tag "$prefix"
+    publishDir "${params.outdir}/mapping", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
+	        else filename}
+    when:
+    params.aligner == 'hisat2'
+
+    input:
+    set val(prefix), file(reads) from hisat2_raw_reads 
+    file hs2_indices from hs2_indices.collect()
+    file alignment_splicesites from alignment_splicesites.collect()
+    val parse_res from stranded_results_hisat
+
+    output:
+    file "${prefix}.bam" into hisat2_bam
+    file "${prefix}.hisat2_summary.txt" into alignment_logs
+
+    script:
+    index_base = hs2_indices[0].toString() - ~/.\d.ht2/
+    def rnastrandness = ''
+    if (parse_res=='forward'){
+        rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
+    } else if (parse_res=='reverse'){
+        rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
+    }
+    if (params.singleEnd) {
+    """
+    hisat2 -x $index_base \\
+           -U $reads \\
+           $rnastrandness \\
+           --known-splicesite-infile $alignment_splicesites \\
+           -p ${task.cpus} \\
+           --met-stderr \\
+           --new-summary \\
+           --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
+           | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
+    """
+    } else {
+    """
+    hisat2 -x $index_base \\
+           -1 ${reads[0]} \\
+           -2 ${reads[1]} \\
+           $rnastrandness \\
+           --known-splicesite-infile $alignment_splicesites \\
+           --no-mixed \\
+           --no-discordant \\
+           -p ${task.cpus} \\
+           --met-stderr \\
+           --new-summary \\
+           --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
+           | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}.bam
+     """
+    }
+  }
+}
+
+// TopHat2
+
+if(params.aligner == 'tophat2'){
+  process tophat2Align {
+    tag "${prefix}"
+    publishDir "${params.outdir}/mapping", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".align_summary.txt") > 0) "logs/$filename"
+            else filename
+        }
+
+    input:
+      set val(prefix), file(reads) from tophat2_raw_reads 
+      file "tophat2" from tophat2_indices.collect()
+      file gtf from gtf_tophat.collect()
+      val parse_res from stranded_results_tophat
+
+    output:
+      file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist, bam_forSubsamp, bam_skipSubsamp
+      file "${prefix}.align_summary.txt" into alignment_logs
+      file "${prefix}.bam.bai" into bam_index_tophat
+
+    script:
+      def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
+      def stranded_opt = '--library-type fr-unstranded'
+      if (parse_res == 'forward'){
+        stranded_opt = '--library-type fr-secondstrand'
+      }else if ((parse_res == 'reverse')){
+        stranded_opt = '--library-type fr-firststrand'
+      }
+      def out = './mapping'
+      def sample = "--rg-id ${prefix} --rg-sample ${prefix} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${prefix}"
+      """
+      mkdir -p ${out}
+      tophat2 -p ${task.cpus} \\
+      ${sample} \\
+      ${params.tophat2_opts} \\
+      --GTF $gtf \\
+      ${stranded_opt} \\
+      -o ${out} \\
+      ${params.bowtie2_index} \\
+      ${reads} 
+
+      mv ${out}/accepted_hits.bam ${prefix}.bam
+      mv ${out}/align_summary.txt ${prefix}.align_summary.txt
+      samtools index ${prefix}.bam
+      """
+  }
+}
+*/
+
 
 /*
  * MultiQC
  */
 
+/*
 process get_software_versions {
   output:
   file 'software_versions_mqc.yaml' into software_versions_yaml
@@ -293,17 +676,6 @@ process get_software_versions {
   """
   echo $workflow.manifest.version &> v_main.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
-  fastqc --version &> v_fastqc.txt
-  STAR --version &> v_star.txt
-  tophat2 --version &> v_tophat2.txt
-  hisat2 --version &> v_hisat2.txt
-  preseq &> v_preseq.txt
-  infer_experiment.py --version &> v_rseqc.txt
-  read_duplication.py --version &> v_read_duplication.txt
-  featureCounts -v &> v_featurecounts.txt
-  htseq-count -h | grep version  &> v_htseq.txt
-  picard MarkDuplicates --version &> v_markduplicates.txt || true
-  samtools --version &> v_samtools.txt
   multiqc --version &> v_multiqc.txt
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
@@ -368,6 +740,7 @@ process multiqc {
     multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml $modules_list
     """    
 }
+*/
 
 
 /*
@@ -412,8 +785,6 @@ workflow.onComplete {
     if(workflow.commitId) report_fields['summary']['Pipeline repository Git Commit'] = workflow.commitId
     if(workflow.revision) report_fields['summary']['Pipeline Git branch/tag'] = workflow.revision
 
-    report_fields['skipped_poor_alignment'] = skipped_poor_alignment
-
     // Render the TXT template
     def engine = new groovy.text.GStringTemplateEngine()
     def tf = new File("$baseDir/assets/oncomplete_template.txt")
@@ -450,11 +821,6 @@ workflow.onComplete {
     woc.write(execInfo)
 
     /*final logs*/
-
-    if(skipped_poor_alignment.size() > 0){
-        log.info "[rnaseq] WARNING - ${skipped_poor_alignment.size()} samples skipped due to poor alignment scores!"
-    }
-
     if(workflow.success){
         log.info "[rnaseq] Pipeline Complete"
     }else{
