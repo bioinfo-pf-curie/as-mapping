@@ -495,7 +495,7 @@ if ( params.aligner == 'star' ){
     //def gtfOpts = params.gtf ? "--sjdbGTFfile $gtf" : ''
     def gtfOpts = ""
     def mandatoryOpts = "--alignEndsType EndToEnd --outSAMattributes NH HI NM MD --outSAMtype BAM Unsorted"
-    def genomeBase = index.toString() - ~/_STAR_index$/
+    def genomeBase = index.baseName - ~/_STAR_index$/
     """
     STAR --genomeDir $index \\
        ${gtfOpts} \\
@@ -506,7 +506,7 @@ if ( params.aligner == 'star' ){
        --readFilesCommand zcat \\
        --runDirPerm All_RWX \\
        --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
-       --outFileNamePrefix $prefix_$genomeBase  \\
+       --outFileNamePrefix ${prefix}_${genomeBase}  \\
        --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
     """
   }
