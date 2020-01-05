@@ -138,7 +138,7 @@ if (params.asfasta ){
 
 // Genome index
 // Can be one or two indexes for nmask/parental mapping
-
+// Bowtie2/Hisat2 path are managed as string to index directory
 if ( params.starIndex ){
   Channel.from( params.starIndex )
          .splitCsv()
@@ -149,13 +149,13 @@ if ( params.starIndex ){
   Channel.from( params.bowtie2Index )
          .splitCsv()
          .flatten()
-         .map { it.substring(0,it.lastIndexOf(File.separator)+1) }
+         .map { file(it) }
          .set { bowtie2Idx }
 }else if (params.hisat2Index ){
   Channel.from( params.hisat2Index )
          .splitCsv()
          .flatten()
-         .map { it.substring(0,it.lastIndexOf(File.separator)+1) }
+         .map { file(it) }
          .set { hisat2Idx }
 }
 
@@ -294,6 +294,9 @@ if(params.aligner == 'star'){
 } else if(params.aligner == 'tophat2') {
   summary['Aligner'] = "Tophat2"
   if(params.bowtie2Index) summary['Tophat2 Index'] = params.bowtie2Index
+} else if(params.aligner == 'bowtie2') {
+  summary['Aligner'] = "Bowtie2"
+  if(params.bowtie2Index) summary['Bowtie2 Index'] = params.bowtie2Index
 } else if(params.aligner == 'hisat2') {
   summary['Aligner'] = "HISAT2"
   if(params.hisat2Index) summary['HISAT2 Index'] = params.hisat2Index
@@ -395,7 +398,9 @@ if ( (params.aligner == "bowtie2" || params.aligner == "tophat2") && !params.bow
     file(fasta) from genomeFastaBowtie2.flatten()
 
     output:
-    file("*bowtie2_index") into bowtie2Idx
+    file("${strainPrefix}_bowtie2_index") into bowtie2Idx
+    //val "${strainPrefix}_bowtie2_index" into bowtie2Idx
+
 
     script:
     strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
@@ -434,7 +439,7 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
     file gtf from gtfHisat2Index
 
     output:
-    file "${fasta.baseName}.*.ht2*" into hisat2Idx
+    val("${fasta.baseName}.hisat2_index") into hisat2Idx
 
     script:
     if (!task.memory) {
@@ -479,7 +484,7 @@ if ( params.aligner == 'star' ){
 
     input:
     set val(prefix), file(reads) from rawReadsStar
-    file index from starIdx
+    each index from starIdx
     file gtf from gtfStar.collect().ifEmpty([])
 
     output:
@@ -490,6 +495,7 @@ if ( params.aligner == 'star' ){
     //def gtfOpts = params.gtf ? "--sjdbGTFfile $gtf" : ''
     def gtfOpts = ""
     def mandatoryOpts = "--alignEndsType EndToEnd --outSAMattributes NH HI NM MD --outSAMtype BAM Unsorted"
+    def genomeBase = index.toString() - ~/_STAR_index$/
     """
     STAR --genomeDir $index \\
        ${gtfOpts} \\
@@ -500,7 +506,7 @@ if ( params.aligner == 'star' ){
        --readFilesCommand zcat \\
        --runDirPerm All_RWX \\
        --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
-       --outFileNamePrefix $prefix  \\
+       --outFileNamePrefix $prefix_$genomeBase  \\
        --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
     """
   }
@@ -517,31 +523,37 @@ if ( params.aligner == 'bowtie2' ){
             else filename}
 
     input:
-    set val(sample), file(reads) from rawReadsBowtie2
-    file index from bowtie2Idx
+    set val(prefix), file(reads) from rawReadsBowtie2
+    //each index from bowtie2Idx
+    each file(index) from bowtie2Idx
 
     output:
-    set val(prefix), file("${prefix}.bam") into bowtie2bam
+    set val(prefix), file("*.bam") into bowtie2bam
 
     script:
-    prefix = reads.toString() - ~/(\.fq)?(\.fastq)?(\.gz)?$/
-    genomeBase = index[0].toString() - ~/(\.rev)?(.\d.bt2)/
+    println(index.toRealPath())
+    idxDir = file(index.toRealPath())
+    allFiles = idxDir.list()
+    genomeBase = allFiles[0] - ~/(\.rev)?(.\d.bt2)/ 
+    bwt2Opts = params.nmask ? "-D 70 -R 3 -N 0 -L 20 -i S,1,0.50" : ""
+
     if (params.singleEnd){
     """
-    bowtie2 --very-sensitive --end-to-end --reorder -D 70 -R 3 -N 0 -L 20 -i S,1,0.50 \\
+    bowtie2 --very-sensitive --end-to-end --reorder \\
+            ${bwt2Opts} \\
             --rg-id BMG --rg SM:${prefix} \\
             -p ${task.cpus} \\
             -x ${index}/${genomeBase} \\
-            --un ${prefix}_unmap.fastq \\
-            -U ${reads} | samtools view -bS - > ${prefix}.bam
+            -U ${reads} | samtools view -bS - > ${sample}_${genomeBase}.bam
     """
     }else{
     """
-    bowtie2 --very-sensitive --end-to-end --reorder -D 70 -R 3 -N 0 -L 20 -i S,1,0.50 \\
+    bowtie2 --very-sensitive --end-to-end --reorder \\
+            ${bwt2Opts} \\
             --rg-id BMG --rg SM:${prefix} \\
             -p ${task.cpus} \\
             -x ${index}/${genomeBase} \\
-            -1 ${reads}[0] -2 ${reads}[1] | samtools view -bS - > ${prefix}.bam
+            -1 ${reads[0]} -2 ${reads[1]} | samtools view -bS - > ${prefix}_${genomeBase}.bam
     """
     }
   }
