@@ -398,16 +398,14 @@ if ( (params.aligner == "bowtie2" || params.aligner == "tophat2") && !params.bow
     file(fasta) from genomeFastaBowtie2.flatten()
 
     output:
-    file("${strainPrefix}_bowtie2_index") into bowtie2Idx
-    //val "${strainPrefix}_bowtie2_index" into bowtie2Idx
-
+    file("${strainPrefix}_bowtie2_index") into (bowtie2Idx, tophat2Idx)
 
     script:
     strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
-    bwt2_base = fasta.toString() - ~/(\.fa)?(\.fasta)?(\.fas)?$/
+    base = fasta.toString() - ~/(\.fa)?(\.fasta)?(\.fas)?$/
     """
     mkdir -p ${strainPrefix}_bowtie2_index
-    bowtie2-build ${fasta} ${strainPrefix}_bowtie2_index/${bwt2_base}
+    bowtie2-build ${fasta} ${strainPrefix}_bowtie2_index/${base}
     """
   }
 }
@@ -435,35 +433,19 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
 
     input:
     file fasta from genomeFastaHisat2.flatten()
-    file indexing_splicesites from indexingSplicesites
-    file gtf from gtfHisat2Index
+    file indexing_splicesites from indexingSplicesites.collect()
+    file gtf from gtfHisat2Index.collect()
 
     output:
-    val("${fasta.baseName}.hisat2_index") into hisat2Idx
+    file("${strainPrefix}_hisat2_index") into hisat2Idx
 
     script:
-    if (!task.memory) {
-      log.info "[HISAT2 index build] Available memory not known - defaulting to 0. Specify process memory requirements to change this."
-      avail_mem = 0
-    } else {
-      log.info "[HISAT2 index build] Available memory: ${task.memory}"
-      avail_mem = task.memory.toGiga()
-    }
-    if (avail_mem > params.hisat_build_memory) {
-      log.info "[HISAT2 index build] Over ${params.hisat_build_memory} GB available, so using splice sites and exons in HISAT2 index"
-      extract_exons = "hisat2_extract_exons.py $gtf > ${gtf.baseName}.hisat2_exons.txt"
-      ss = "--ss $indexing_splicesites"
-      exon = "--exon ${gtf.baseName}.hisat2_exons.txt"
-    } else {
-      log.info "[HISAT2 index build] Less than ${params.hisat_build_memory} GB available, so NOT using splice sites and exons in HISAT2 index."
-      log.info "[HISAT2 index build] Use --hisat_build_memory [small number] to skip this check."
-      extract_exons = ''
-      ss = ''
-      exon = ''
-    }
+    strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    base = fasta.toString() - ~/(\.fa)?(\.fasta)?(\.fas)?$/
     """
-    $extract_exons
-    hisat2-build -p ${task.cpus} $ss $exon $fasta ${fasta.baseName}.hisat2_index
+    mkdir -p ${strainPrefix}_hisat2_index
+    hisat2_extract_exons.py $gtf > ${gtf.baseName}.hisat2_exons.txt
+    hisat2-build -p ${task.cpus} --ss $indexing_splicesites --exon ${gtf.baseName}.hisat2_exons.txt $fasta ${strainPrefix}_hisat2_index/${base}
     """
   }
 }
@@ -524,14 +506,12 @@ if ( params.aligner == 'bowtie2' ){
 
     input:
     set val(prefix), file(reads) from rawReadsBowtie2
-    //each index from bowtie2Idx
     each file(index) from bowtie2Idx
 
     output:
-    set val(prefix), file("*.bam") into bowtie2bam
+    set val(prefix), file("*.bam") into bowtie2Bam
 
     script:
-    println(index.toRealPath())
     idxDir = file(index.toRealPath())
     allFiles = idxDir.list()
     genomeBase = allFiles[0] - ~/(\.rev)?(.\d.bt2)/ 
@@ -560,7 +540,56 @@ if ( params.aligner == 'bowtie2' ){
 }
 
 
-/*
+// TopHat2
+
+if(params.aligner == 'tophat2'){
+  process tophat2Align {
+    tag "$prefix"
+    publishDir "${params.outdir}/mapping", mode: 'copy',
+        saveAs: {filename ->
+            if (filename.indexOf(".align_summary.txt") > 0) "logs/$filename"
+            else filename
+        }
+
+    input:
+    set val(prefix), file(reads) from rawReadsTophat2 
+    each file(index) from tophat2Idx
+    file gtf from gtfTophat2.collect()
+
+    output:
+    file "${prefix}_${genomeBase}.bam" into tophat2Bam
+    file "*.align_summary.txt" into tophat2Logs
+
+    script:
+    idxDir = file(index.toRealPath())
+    allFiles = idxDir.list()
+    genomeBase = allFiles[0] - ~/(\.rev)?(.\d.bt2)/ 
+
+    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
+    def stranded_opt = '--library-type fr-unstranded'
+    //if (parse_res == 'forward'){
+    //  stranded_opt = '--library-type fr-secondstrand'
+    //}else if ((parse_res == 'reverse')){
+    //  stranded_opt = '--library-type fr-firststrand'
+    //}
+    def out = './mapping'
+    def sample = "--rg-id ${prefix} --rg-sample ${prefix} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${prefix}"
+    """
+    mkdir -p ${out}
+    tophat2 -p ${task.cpus} \\
+    ${sample} \\
+    --GTF $gtf \\
+    ${stranded_opt} \\
+    -o ${out} \\
+    ${index}/${genomeBase} \\
+    ${reads} 
+
+    mv ${out}/accepted_hits.bam ${prefix}_${genomeBase}.bam
+    mv ${out}/align_summary.txt ${prefix}_${genomeBase}.align_summary.txt
+    """
+  }
+}
+
 
 // HiSat2
 
@@ -571,108 +600,55 @@ if ( params.aligner == 'hisat2' ){
         saveAs: {filename ->
             if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
 	        else filename}
-    when:
-    params.aligner == 'hisat2'
-
     input:
-    set val(prefix), file(reads) from hisat2_raw_reads 
-    file hs2_indices from hs2_indices.collect()
-    file alignment_splicesites from alignment_splicesites.collect()
-    val parse_res from stranded_results_hisat
+    set val(prefix), file(reads) from rawReadsHisat2
+    each file(index) from hisat2Idx
+    file alignmentSplicesites from alignmentSplicesites.collect()
 
     output:
-    file "${prefix}.bam" into hisat2_bam
-    file "${prefix}.hisat2_summary.txt" into alignment_logs
+    file "${prefix}_${genomeBase}.bam" into hisat2Bam
+    file "*hisat2_summary.txt" into hisat2Logs
 
     script:
-    index_base = hs2_indices[0].toString() - ~/.\d.ht2/
+    idxDir = file(index.toRealPath())
+    allFiles = idxDir.list()
+    genomeBase = allFiles[0] - ~/(\.rev)?(.\d.ht2)/
     def rnastrandness = ''
-    if (parse_res=='forward'){
-        rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
-    } else if (parse_res=='reverse'){
-        rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
-    }
+    //if (parse_res=='forward'){
+    //    rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
+    //} else if (parse_res=='reverse'){
+    //    rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
+    //}
     if (params.singleEnd) {
     """
-    hisat2 -x $index_base \\
+    hisat2 -x $index/${genomeBase} \\
            -U $reads \\
            $rnastrandness \\
-           --known-splicesite-infile $alignment_splicesites \\
+           --known-splicesite-infile $alignmentSplicesites \\
            -p ${task.cpus} \\
            --met-stderr \\
            --new-summary \\
-           --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
-           | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
+           --summary-file ${prefix}_${genomeBase}.hisat2_summary.txt \\
+           | samtools view -bS -F 4 -F 256 - > ${prefix}_${genomeBase}.bam
     """
     } else {
     """
-    hisat2 -x $index_base \\
+    hisat2 -x $index/${genomeBase} \\
            -1 ${reads[0]} \\
            -2 ${reads[1]} \\
            $rnastrandness \\
-           --known-splicesite-infile $alignment_splicesites \\
+           --known-splicesite-infile $alignmentSplicesites \\
            --no-mixed \\
            --no-discordant \\
            -p ${task.cpus} \\
            --met-stderr \\
            --new-summary \\
-           --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
-           | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}.bam
+           --summary-file ${prefix}_${genomeBase}.hisat2_summary.txt \\
+           | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}_${genomeBase}.bam
      """
     }
   }
 }
-
-// TopHat2
-
-if(params.aligner == 'tophat2'){
-  process tophat2Align {
-    tag "${prefix}"
-    publishDir "${params.outdir}/mapping", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf(".align_summary.txt") > 0) "logs/$filename"
-            else filename
-        }
-
-    input:
-      set val(prefix), file(reads) from tophat2_raw_reads 
-      file "tophat2" from tophat2_indices.collect()
-      file gtf from gtf_tophat.collect()
-      val parse_res from stranded_results_tophat
-
-    output:
-      file "${prefix}.bam" into bam_count, bam_preseq, bam_markduplicates, bam_featurecounts, bam_genetype, bam_HTseqCounts, bam_read_dist, bam_forSubsamp, bam_skipSubsamp
-      file "${prefix}.align_summary.txt" into alignment_logs
-      file "${prefix}.bam.bai" into bam_index_tophat
-
-    script:
-      def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
-      def stranded_opt = '--library-type fr-unstranded'
-      if (parse_res == 'forward'){
-        stranded_opt = '--library-type fr-secondstrand'
-      }else if ((parse_res == 'reverse')){
-        stranded_opt = '--library-type fr-firststrand'
-      }
-      def out = './mapping'
-      def sample = "--rg-id ${prefix} --rg-sample ${prefix} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${prefix}"
-      """
-      mkdir -p ${out}
-      tophat2 -p ${task.cpus} \\
-      ${sample} \\
-      ${params.tophat2_opts} \\
-      --GTF $gtf \\
-      ${stranded_opt} \\
-      -o ${out} \\
-      ${params.bowtie2_index} \\
-      ${reads} 
-
-      mv ${out}/accepted_hits.bam ${prefix}.bam
-      mv ${out}/align_summary.txt ${prefix}.align_summary.txt
-      samtools index ${prefix}.bam
-      """
-  }
-}
-*/
 
 
 /*
