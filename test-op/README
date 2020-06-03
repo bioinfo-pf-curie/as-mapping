@@ -1,0 +1,75 @@
+## Full usage
+
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --saveReference \
+--nmask --outdir /data/tmp/nservant/asmap_1_nmask -w /data/tmp/nservant/asmap_1_nmask/work" | qsub -N "asmap_1_nmask"
+
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --saveReference \
+--outdir /data/tmp/nservant/asmap_1 -w /data/tmp/nservant/asmap_1/work" | qsub -N "asmap_1"
+
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' --saveReference \
+--nmask --outdir /data/tmp/nservant/asmap_2_nmask -w /data/tmp/nservant/asmap_2_nmask/work" | qsub -N "asmap_2_nmask"
+
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' --saveReference \
+--outdir /data/tmp/nservant/asmap_2 -w /data/tmp/nservant/asmap_2/work" | qsub -N "asmap_2"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'tophat2' --saveReference \
+--nmask --outdir /data/tmp/nservant/asmap_3_nmask -w /data/tmp/nservant/asmap_3_nmask/work" | qsub -N "asmap_3_nmask"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'tophat2' --saveReference \
+--outdir /data/tmp/nservant/asmap_3 -w /data/tmp/nservant/asmap_3/work" | qsub -N "asmap_3"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --saveReference \
+--nmask --outdir /data/tmp/nservant/asmap_4_nmask -w /data/tmp/nservant/asmap_4_nmask/work" | qsub -N "asmap_4_nmask"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --saveReference \
+--outdir /data/tmp/nservant/asmap_4 -w /data/tmp/nservant/asmap_4/work" | qsub -N "asmap_4"
+
+
+## Skip Reference Preparation
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --saveReference \
+--asfasta '/data/tmp/nservant/asmapping_testop/CAST_EiJ_129S1_SvImJ_nmask_genome.fa' --nmask --outdir /data/tmp/nservant/asmap_skipref_nmask \
+-w /data/tmp/nservant/asmap_skipref_nmask/work" | qsub -N "asmap_skipref_nmask"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --saveReference \
+--asfasta '/data/tmp/nservant/asmapping_testop/CAST_EiJ_maternal_genome.fa,/data/tmp/nservant/asmapping_testop/129S1_SvImJ_paternal_genome.fa' \
+--outdir /data/tmp/nservant/asmap_skipref -w /data/tmp/nservant/asmap_skipref/work" | qsub -N "asmap_skipref"
+
+
+## Skip Index
+
+### STAR + Parental
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' \
+--starIndex '/data/tmp/nservant/asmapping_testop/CAST_EiJ_STAR_index/,/data/tmp/nservant/asmapping_testop/129S1_SvImJ_STAR_index/' \
+--outdir /data/tmp/nservant/asmap_star -w /data/tmp/nservant/asmap_star/work" | qsub -N "asmap_star"
+
+### STAR + nmask
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' \
+--starIndex '/data/tmp/nservant/asmapping_testop/CAST_EiJ_129S1_SvImJ_STAR_index/' --nmask --outdir /data/tmp/nservant/asmap_star_nmask \
+-w /data/tmp/nservant/asmap_star_nmask/work" | qsub -N "asmap_star_nmask"
+
+## Bowtie2 + Parental
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' \
+--bowtie2Index '/data/tmp/nservant/asmapping_testop/CAST_EiJ_bowtie2_index/,/data/tmp/nservant/asmapping_testop/129S1_SvImJ_bowtie2_index/' \
+--outdir /data/tmp/nservant/asmap_bwt2 -w /data/tmp/nservant/asmap_bwt2/work" | qsub -N "asmap_bwt2"
+
+## Bowtie2 + Nmask
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' \
+--bowtie2Index '/data/tmp/nservant/asmapping_testop/CAST_EiJ_129S1_SvImJ_bowtie2_index/' --nmask --outdir /data/tmp/nservant/asmap_bwt2_nmask \
+-w /data/tmp/nservant/asmap_bwt2_nmask/work" | qsub -N  "asmap_bwt2_nmask"
+
+## Hisat2 + Parental
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' \
+--hisat2Index '/data/tmp/nservant/asmapping_testop/CAST_EiJ_hisat2_index/,/data/tmp/nservant/asmapping_testop/129S1_SvImJ_hisat2_index/' \
+--outdir /data/tmp/nservant/asmap_hisat2 -w /data/tmp/nservant/asmap_hisat2/work" | qsub -N "asmap_hisat2"
+
+## Hisat2 + Nmask
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' \
+--hisat2Index '/data/tmp/nservant/asmapping_testop/CAST_EiJ_129S1_SvImJ_hisat2_index/' --nmask --outdir /data/tmp/nservant/asmap_hisat2_nmask \
+-w /data/tmp/nservant/asmap_hisat2_nmask/work" | qsub -N  "asmap_hisat2_nmask"
+
+
+
+
+
+

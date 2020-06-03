@@ -45,15 +45,14 @@ def helpMessage() {
       -profile PROFILE              Configuration profile to use. test / conda / toolsPath / singularity / cluster (see below)
 
     Sequencing:
-      --singleEnd                   Specifies that the input is single end reads
+      --singleEnd [bool]            Specifies that the input is single end reads
 
-    Genotype:
-      --maternal
-      --paternal
-      --nmask
-      --asfasta
-      --saveReference               Save the reference files - not done by default
-
+    References:
+      --maternal [str]
+      --paternal [str]
+      --nmask [bool]
+      --asfasta [file]
+      --saveReference [bool]        Save the reference files - not done by default
 
     Mapping:
       --aligner 'MAPPER'            Tool for read alignments ['star', 'bowtie2', 'hisat2', 'tophat2']. Default: 'star'
@@ -301,6 +300,11 @@ if(params.aligner == 'star'){
   summary['Aligner'] = "HISAT2"
   if(params.hisat2Index) summary['HISAT2 Index'] = params.hisat2Index
 }
+if ( params.nmask ){
+  summary['Mapping Strategy'] = 'N-mask'
+}else{
+  summary['Mapping Strategy'] = 'Parental'
+}
 summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
@@ -379,15 +383,12 @@ if ( params.aligner == 'star' && !params.starIndex ){
 
     script:
     strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
-    //avail_mem = task.memory ? "--limitGenomeGenerateRAM ${task.memory.toBytes() - 100000000}" : ''
-    // --sjdbGTFfile $gtf $avail_mem
     """
     mkdir -p ${strainPrefix}_STAR_index
     STAR --runMode genomeGenerate --runThreadN ${task.cpus} --genomeDir ${strainPrefix}_STAR_index --genomeFastaFiles $fasta
     """
   }
 }
-
 
 if ( (params.aligner == "bowtie2" || params.aligner == "tophat2") && !params.bowtie2Index ){
   process makeBowtie2Index {
@@ -457,7 +458,7 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
 
 // STAR
 if ( params.aligner == 'star' ){
-  process starAlign {
+  process star {
     tag "$prefix"
     publishDir "${params.outdir}/mapping", mode: 'copy',
         saveAs: {filename ->
@@ -474,8 +475,7 @@ if ( params.aligner == 'star' ){
     file "*.out" into starLogs
 
     script:
-    //def gtfOpts = params.gtf ? "--sjdbGTFfile $gtf" : ''
-    def gtfOpts = ""
+    def gtfOpts = params.gtf ? "--sjdbGTFfile $gtf" : ''
     def mandatoryOpts = "--alignEndsType EndToEnd --outSAMattributes NH HI NM MD --outSAMtype BAM Unsorted"
     def genomeBase = index.baseName - ~/_STAR_index$/
     """
@@ -495,9 +495,8 @@ if ( params.aligner == 'star' ){
 }
 
 // Bowtie2
-
 if ( params.aligner == 'bowtie2' ){
-  process bowtie2Align {
+  process bowtie2 {
     tag "$prefix"
     publishDir "${params.outdir}/mapping", mode: 'copy',
         saveAs: {filename ->
@@ -516,34 +515,22 @@ if ( params.aligner == 'bowtie2' ){
     allFiles = idxDir.list()
     genomeBase = allFiles[0] - ~/(\.rev)?(.\d.bt2)/ 
     bwt2Opts = params.nmask ? "-D 70 -R 3 -N 0 -L 20 -i S,1,0.50" : ""
-
-    if (params.singleEnd){
+    inCmd = params.singleEnd ? "-U ${reads}" : "-1 ${reads[0]} -2 ${reads[1]}"
     """
     bowtie2 --very-sensitive --end-to-end --reorder \\
             ${bwt2Opts} \\
             --rg-id BMG --rg SM:${prefix} \\
             -p ${task.cpus} \\
             -x ${index}/${genomeBase} \\
-            -U ${reads} | samtools view -bS - > ${sample}_${genomeBase}.bam
+            ${inCmd} | samtools view -bS - > ${prefix}_${genomeBase}.bam
     """
-    }else{
-    """
-    bowtie2 --very-sensitive --end-to-end --reorder \\
-            ${bwt2Opts} \\
-            --rg-id BMG --rg SM:${prefix} \\
-            -p ${task.cpus} \\
-            -x ${index}/${genomeBase} \\
-            -1 ${reads[0]} -2 ${reads[1]} | samtools view -bS - > ${prefix}_${genomeBase}.bam
-    """
-    }
   }
 }
 
 
 // TopHat2
-
 if(params.aligner == 'tophat2'){
-  process tophat2Align {
+  process tophat2 {
     tag "$prefix"
     publishDir "${params.outdir}/mapping", mode: 'copy',
         saveAs: {filename ->
@@ -577,12 +564,12 @@ if(params.aligner == 'tophat2'){
     """
     mkdir -p ${out}
     tophat2 -p ${task.cpus} \\
-    ${sample} \\
-    --GTF $gtf \\
-    ${stranded_opt} \\
-    -o ${out} \\
-    ${index}/${genomeBase} \\
-    ${reads} 
+             ${sample} \\
+             --GTF $gtf \\
+             ${stranded_opt} \\
+             -o ${out} \\
+             ${index}/${genomeBase} \\
+             ${reads} 
 
     mv ${out}/accepted_hits.bam ${prefix}_${genomeBase}.bam
     mv ${out}/align_summary.txt ${prefix}_${genomeBase}.align_summary.txt
@@ -592,9 +579,8 @@ if(params.aligner == 'tophat2'){
 
 
 // HiSat2
-
 if ( params.aligner == 'hisat2' ){
-  process hisat2Align {
+  process hisat2 {
     tag "$prefix"
     publishDir "${params.outdir}/mapping", mode: 'copy',
         saveAs: {filename ->
@@ -613,16 +599,16 @@ if ( params.aligner == 'hisat2' ){
     idxDir = file(index.toRealPath())
     allFiles = idxDir.list()
     genomeBase = allFiles[0] - ~/(\.rev)?(.\d.ht2)/
+    inCmd = params.singleEnd ? "-U $reads" : "-1 ${reads[0]} -2 ${reads[1]}"
     def rnastrandness = ''
     //if (parse_res=='forward'){
     //    rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
     //} else if (parse_res=='reverse'){
     //    rnastrandness = params.singleEnd ? '--rna-strandness R' : '--rna-strandness RF'
     //}
-    if (params.singleEnd) {
     """
     hisat2 -x $index/${genomeBase} \\
-           -U $reads \\
+           $inCmd \\
            $rnastrandness \\
            --known-splicesite-infile $alignmentSplicesites \\
            -p ${task.cpus} \\
@@ -631,22 +617,6 @@ if ( params.aligner == 'hisat2' ){
            --summary-file ${prefix}_${genomeBase}.hisat2_summary.txt \\
            | samtools view -bS -F 4 -F 256 - > ${prefix}_${genomeBase}.bam
     """
-    } else {
-    """
-    hisat2 -x $index/${genomeBase} \\
-           -1 ${reads[0]} \\
-           -2 ${reads[1]} \\
-           $rnastrandness \\
-           --known-splicesite-infile $alignmentSplicesites \\
-           --no-mixed \\
-           --no-discordant \\
-           -p ${task.cpus} \\
-           --met-stderr \\
-           --new-summary \\
-           --summary-file ${prefix}_${genomeBase}.hisat2_summary.txt \\
-           | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}_${genomeBase}.bam
-     """
-    }
   }
 }
 
@@ -682,7 +652,7 @@ process workflow_summary_mqc {
   id: 'summary'
   description: " - this information is collected when the pipeline is started."
   section_name: 'Workflow Summary'
-  section_href: 'https://gitlab.curie.fr/rnaseq'
+  section_href: 'https://gitlab.curie.fr/asmapping'
   plot_type: 'html'
   data: |
       <dl class=\"dl-horizontal\">
