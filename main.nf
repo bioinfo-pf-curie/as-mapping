@@ -157,8 +157,6 @@ if (params.snpFile){
  Channel.fromPath("${params.snpFile}")
          .ifEmpty { exit 1, "SNP file not found: ${params.snpFile}" }
          .set { chSnpFile }
-}else{
-  chSnpFile=Channel.empty()
 }
 
 // Genome index
@@ -781,9 +779,9 @@ process markDuplicates{
 }
 
 if (params.rmDups){
-  chFiltBams = chMarkedBams
+  chMarkedBams.into{chFiltBams; chFiltBamsSplit}
 }else{
-  chFiltBams = chTagBams 
+  chTagBams.into{chFiltBams; chFiltBamsSplit}
 }
 
 
@@ -802,7 +800,7 @@ process splitTaggedBam {
   !params.nmask
 
   input:
-  set val(prefix), file(asBam) from chFiltBams
+  set val(prefix), file(asBam) from chFiltBamsSplit
 
   output:
   set val(prefix), file("*genome1.bam"), file("*genome2.bam") into genomeBams
@@ -814,7 +812,7 @@ process splitTaggedBam {
   """
 }
 
-genomeBams.join(chTagBams).into{chBamCount; chBamWig}
+genomeBams.join(chFiltBams).into{chBamCount; chBamWig}
 
 
 /*************************
