@@ -3,7 +3,7 @@
 **Institut Curie - Nextflow Allele-Specific Mapping pipeline**
 
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.32.0-brightgreen.svg)](https://www.nextflow.io/)
-[![MultiQC](https://img.shields.io/badge/MultiQC-1.7-blue.svg)](https://multiqc.info/)
+[![MultiQC](https://img.shields.io/badge/MultiQC-1.8-blue.svg)](https://multiqc.info/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 <!--[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)-->
@@ -50,33 +50,41 @@ nextflow run main.nf --samplePlan sample_plan --genome mm9 -profile conda
    --genome [str]                Name of genome reference
    -profile [str]                Configuration profile to use. test / conda / toolsPath / singularity / cluster (see below)
 
- Sequencing:
+ Sequencing
    --singleEnd [bool]            Specifies that the input is single end reads
 
- Strandedness:
+ Strandedness
    --forwardStranded [bool]      The library is forward stranded
    --reverseStranded [bool]      The library is reverse stranded
    --unStranded [bool]           The default behaviour
 
- References:
-   --maternal [str]
-   --paternal [str]
-   --nmask [bool]
-   --asfasta [file]
+ Genotypes Information
+   --maternal [str]              Maternal genotype (must be in the vcf file)
+   --paternal [str]              Paternal genotype (must be in the vcf file)
+   --nmask [bool]                Run N-mask mapping stratefy. Otherwise, parental mapping will be used
+   --asfasta [file]              Skip genome preparation by specifying the allele-specific fasta file(s)
    --saveReference [bool]        Save the reference files - not done by default
 
- Mapping:
+ References [If not specified in the configuration file or you wish to overwrite any of the references given by the --genome field]
+   --fasta                       Path to generic reference genome 
+   --vcf                         Path to vcf from Mouse Sanger Project
+   --gtf                         Gene annotation (.gtf)
+   --blacklist [file]            Path to black list regions (.bed).
+
+ Mapping
    --aligner [str]               Tool for read alignments ['star', 'bowtie2', 'hisat2', 'tophat2']. Default: 'star'
    --starIndex [file]            Path to STAR index
    --bowtie2Index [file]         Path to Bowtie2 index
    --hisat2Index [file]          Path to HISAT2 index
    --tophat2Index [file]         Path to TopHat2 index
 
- Analysis
+ Analysis (RNA-seq)
    --asratio                     Generate allele-specific ratio table per gene
-   --bigwig                      Generate allele-specific genome-wide profile (.bigWig)
-   --blacklist [file]            Path to black list regions (.bed).
+
+ Analysis (ChIP-seq)
    --rmDups [bool]               Remove duplicates reads
+   --bigwig                      Generate allele-specific genome-wide profile (.bigWig) 
+   
    
  Other options:
    --metadata [file]             Add metadata file for multiQC report
