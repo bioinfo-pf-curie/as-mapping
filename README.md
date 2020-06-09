@@ -14,8 +14,21 @@
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. 
 It comes with conda / singularity containers making installation easier and results highly reproducible.
+The code template used for this pipeline was inspired from the [nf-core](https://nf-co.re/) project.
+
+The goal of this pipeline is to run first level allele-specific analysis for RNA-seq or ChIP-seq data.
+Two main strategies are available, either through parental mapping or through N-mask genome mapping.
+This pipeline was mainly build to work on Mouse sequencing data, in conjunction with the [Mouse Genomes Project](http://www.sanger.ac.uk/science/data/mouse-genomes-project). 
 
 ### Pipline summary
+
+1. Build allele sepcific (parental or nmask) reference genome ([`SNPsplit`](https://github.com/FelixKrueger/SNPsplit))
+2. Build allele specific (parental or nmask) indexes for reads alignment ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / ['bowtie2'](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)) 
+3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / ['bowtie2'](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml))
+4. Mark duplicates ([`Picard`](https://broadinstitute.github.io/picard/))
+5. Split allele specific mapped reads ([`SNPsplit`](https://github.com/FelixKrueger/SNPsplit))
+6. Compute alelle specific gene counts ([`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/))
+7. Generate allele specific genome track (bigWig) [`deepTools`](https://deeptools.readthedocs.io/en/develop/index.html)
 
 ### Quick help
 
@@ -28,6 +41,61 @@ rnaseq v2.0.0dev
 
 Usage:
 nextflow run main.nf --reads '*_R{1,2}.fastq.gz' --genome 'hg19' 
+nextflow run main.nf --samplePlan sample_plan --genome mm9 -profile conda
+
+
+ Mandatory arguments:
+   --reads [file]                Path to input data (must be surrounded with quotes)
+   --samplePlan [file]           Path to sample plan input file (cannot be used with --reads)
+   --genome [str]                Name of genome reference
+   -profile [str]                Configuration profile to use. test / conda / toolsPath / singularity / cluster (see below)
+
+ Sequencing:
+   --singleEnd [bool]            Specifies that the input is single end reads
+
+ Strandedness:
+   --forwardStranded [bool]      The library is forward stranded
+   --reverseStranded [bool]      The library is reverse stranded
+   --unStranded [bool]           The default behaviour
+
+ References:
+   --maternal [str]
+   --paternal [str]
+   --nmask [bool]
+   --asfasta [file]
+   --saveReference [bool]        Save the reference files - not done by default
+
+ Mapping:
+   --aligner [str]               Tool for read alignments ['star', 'bowtie2', 'hisat2', 'tophat2']. Default: 'star'
+   --starIndex [file]            Path to STAR index
+   --bowtie2Index [file]         Path to Bowtie2 index
+   --hisat2Index [file]          Path to HISAT2 index
+   --tophat2Index [file]         Path to TopHat2 index
+
+ Analysis
+   --asratio                     Generate allele-specific ratio table per gene
+   --bigwig                      Generate allele-specific genome-wide profile (.bigWig)
+   --blacklist [file]            Path to black list regions (.bed).
+   --rmDups [bool]               Remove duplicates reads
+   
+ Other options:
+   --metadata [file]             Add metadata file for multiQC report
+   --outdir [file]               The output directory where the results will be saved
+   -w/--work-dir [file]          The temporary directory where intermediate data will be saved
+   --email [str]                 Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
+   -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+
+ Skip options:
+   --skip_multiqc                Skip MultiQC
+
+ =======================================================
+ Available Profiles
+
+   -profile test                Set up the test dataset
+   -profile conda               Build a new conda environment before running the pipeline
+   -profile toolsPath           Use the paths defined in configuration for each tool
+   -profile singularity         Use the Singularity images for each process
+   -profile cluster             Run the workflow on the cluster, instead of locally   
 ```
 
 ### Quick run
@@ -45,15 +113,49 @@ nextflow run main.nf -profile test,conda
 #### Run the pipeline from a sample plan
 
 ```
-nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'hg19' --outdir MY_OUTPUT_DIR -profile conda
+nextflow run main.nf --samplePlan MY_SAMPLE_PLAN --genome 'mm10' --paternal '129S1_SvImJ' --maternal 'CAST_EiJ' --outdir MY_OUTPUT_DIR -profile conda
 
 ```
 
 #### Run the pipeline on a computational cluster
 
 ```
-echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'hg19' --outdir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N rnaseq-2.0
+echo "nextflow run main.nf --reads '*.R{1,2}.fastq.gz' --genome 'mm10' --paternal '129S1_SvImJ' --maternal 'CAST_EiJ' --outdir MY_OUTPUT_DIR -profile singularity,cluster" | qsub -N asmapping"
 
+```
+
+### Run the pipeline step-by-step
+
+Some of the steps as building the reference or the genome indexes can take quite a lot of time.
+Therefore, the pipeline should be able to run from a reference file or pre-computed indexes.
+
+Here are a few examples. Note that in the case of parental mapping, references or indexes can be provided using a 'comma' separatated list.
+
+#### Skip genome(s) preparation
+
+```
+nextflow run main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --saveReference \
+--asfasta '/data/tmp/asmapping_testop/CAST_EiJ_maternal_genome.fa,/data/tmp/asmapping_testop/129S1_SvImJ_paternal_genome.fa' \
+--outdir /data/tmp/asmap_skipref
+```
+
+```
+nextflow run main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --saveReference \
+--asfasta '/data/tmp/asmapping_testop/CAST_EiJ_129S1_SvImJ_nmask_genome.fa' --nmask --outdir /data/tmp//asmap_skipref_nmask
+```
+
+#### Skip genome(s) indexing
+
+```
+nextflow run main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' \
+--bowtie2Index '/data/tmp/asmapping_testop/CAST_EiJ_bowtie2_index/,/data/tmp/asmapping_testop/129S1_SvImJ_bowtie2_index/' \
+--outdir /data/tmp/nservant/asmap_bwt2 
+```
+
+```
+nextflow run main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' \
+--bowtie2Index '/data/tmp/asmapping_testop/CAST_EiJ_129S1_SvImJ_bowtie2_index/' --nmask \
+--outdir /data/tmp/asmap_bwt2_nmask
 ```
 
 ### Defining the '-profile'
