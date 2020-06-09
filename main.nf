@@ -70,10 +70,9 @@ def helpMessage() {
       --asratio                     Generate allele-specific ratio table per gene
       --bigwig                      Generate allele-specific genome-wide profile (.bigWig)
       --blacklist [file]            Path to black list regions (.bed).
-
+      --rmDups [bool]               Remove duplicates reads      
 
     Other options:
-      --rmDups                      TODO
       --metadata [file]             Add metadata file for multiQC report
       --outdir [file]               The output directory where the results will be saved
       -w/--work-dir [file]          The temporary directory where intermediate data will be saved
@@ -657,34 +656,76 @@ if ( params.aligner == 'hisat2' ){
   }
 }
 
+
+if (params.aligner == 'star'){
+  chBams = starBam
+}else if (params.aligner == 'bowtie2'){
+  chBams = bowtie2Bam
+}else if (params.aligner == 'hisat2'){
+  chBams = hisat2Bam
+}else if (params.aligner == 'tophat2'){
+  chBams = tophat2Bam
+}
+
+/****************************
+ * BAM filering
+ */
+
+process markDuplicates{
+  tag "${prefix}"
+  label 'process_medium'
+  publishDir path: "${params.outdir}/mapping", mode: 'copy',
+    saveAs: {filename ->
+             if (!filename.endsWith(".bam") && !filename.endsWith(".bam.bai") ) "stats/$filename"
+             else if ( (filename.endsWith(".bam") || (filename.endsWith(".bam.bai"))) ) filename
+             else null
+            }
+
+  when:
+  params.rmDups
+
+  input:
+  set val(prefix), file(bams) from chBams
+
+  output:
+  set val(prefix), file("*marked.bam}") into chMarkedBams
+  file "*.txt" into chMarkedPicstats
+
+  script:
+  """
+  samtools sort ${bams} -@ ${task.cpus} -T ${prefix} -o ${prefix}_sorted.bam
+
+  picard -Xmx4g MarkDuplicates \\
+    INPUT=${prefix}_sorted.bam \\
+    OUTPUT=${prefix}_marked.bam \\
+    ASSUME_SORTED=true \\
+    REMOVE_DUPLICATES=true \\
+    METRICS_FILE=${prefix}.MarkDuplicates.metrics.txt \\
+    VALIDATION_STRINGENCY=LENIENT \\
+    TMP_DIR=tmpdir
+  """
+}
+
 if (params.nmask){
-  chBams = Channel.empty()
-  if (params.aligner == 'star'){
-    chNmaskBams = starBam
-  }else if (params.aligner == 'bowtie2'){
-    chNmaskBams = bowtie2Bam
-  }else if (params.aligner == 'hisat2'){
-    chNmaskBams = hisat2Bam
-  }else if (params.aligner == 'tophat2'){
-    chNmaskBams = tophat2Bam
- }
+  if (params.rmDups){
+    chFiltNmaskBams = chMarkedBams
+  }else{
+    chFiltNmaskBams = chBams
+  }
 }else{
-  chNmaskBams = Channel.empty()
-  if (params.aligner == 'star'){
-    chBams = starBam.groupTuple()
-  }else if (params.aligner == 'bowtie2'){
-    chBams = bowtie2Bam.groupTuple()
-  }else if (params.aligner == 'hisat2'){
-    chBams = hisat2Bam.groupTuple()
-  }else if (params.aligner == 'tophat2'){
-    chBams = tophat2Bam.groupTuple()
+  if (params.rmDups){
+    chFiltBams = chMarkedBams.groupTuple()
+  }else{
+    chFiltBams = chBams.groupTuple()
   }
 }
+
 
 /*****************************
  * Tag allele-specific reads
  */
 
+// Parental mapping
 process mergeParentalBams {
   tag "${prefix}"
   label 'process_low'
@@ -697,7 +738,7 @@ process mergeParentalBams {
   !params.nmask
 
   input:
-  set val(prefix), file(bams) from chBams  
+  set val(prefix), file(bams) from chFiltBams  
 
   output:
   set val(prefix), file("${prefix}_parentalMerged.bam") into parentalBams, parentalBams2split
@@ -735,6 +776,7 @@ process splitTaggedBam {
   """
 }                 
 
+// N-mask mapping
 process snpSplitTag {
   tag "${prefix}"
   label 'process_mediummem'
@@ -747,7 +789,7 @@ process snpSplitTag {
   params.nmask
 
   input:
-  set val(prefix), file(bam) from chNmaskBams
+  set val(prefix), file(bam) from chFiltNmaskBams
   file(snpFile) from chSnpFile.collect()
 
   output:
@@ -829,7 +871,7 @@ process bigWig {
   nbreads=\$(samtools view -c ${bamTag})
   sf=\$(echo "10000000 \$nbreads" | awk '{printf "%.2f", \$1/\$2}')
   
-  samtools sort -o ${prefix}_genome1_sorted.bam ${bam1}
+  samtools sort -@ ${task.cpus} -T ${prefix} -o ${prefix}_genome1_sorted.bam ${bam1}
   samtools index ${prefix}_genome1_sorted.bam
   bamCoverage -b ${prefix}_genome1_sorted.bam \\
               -o ${prefix}_genome1_rpkm.bigwig \\
@@ -837,7 +879,7 @@ process bigWig {
               ${blacklistParams} \\
               --scaleFactor \$sf
 
-  samtools sort -o ${prefix}_genome2_sorted.bam ${bam2}
+  samtools sort -@ ${task.cpus} -T ${prefix} -o ${prefix}_genome2_sorted.bam ${bam2}
   samtools index ${prefix}_genome2_sorted.bam
   bamCoverage -b ${prefix}_genome2_sorted.bam \\
               -o ${prefix}_genome2_rpkm.bigwig \\
@@ -852,7 +894,7 @@ process bigWig {
  * MultiQC
  */
 
-/*
+
 process get_software_versions {
   output:
   file 'software_versions_mqc.yaml' into software_versions_yaml
@@ -861,6 +903,14 @@ process get_software_versions {
   """
   echo $workflow.manifest.version &> v_main.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
+  hisat2 --version &> v_hisat2.txt
+  tophat2 --version &> v_tophat2.tx
+  STAR --version &> v_star.tx
+  bowtie2 --version &> v_bowtie2.tx
+  picard MarkDuplicates --version &> v_markduplicates.txt || true
+  echo \$(plotFingerprint --version 2>&1) > v_deeptools.txt || true
+  featureCounts -v &> v_featurecounts.txt
+  samtools --version &> v_samtools.txt
   multiqc --version &> v_multiqc.txt
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
@@ -879,7 +929,7 @@ process workflow_summary_mqc {
   id: 'summary'
   description: " - this information is collected when the pipeline is started."
   section_name: 'Workflow Summary'
-  section_href: 'https://gitlab.curie.fr/asmapping'
+  section_href: 'https://gitlab.curie.fr/as-mapping'
   plot_type: 'html'
   data: |
       <dl class=\"dl-horizontal\">
@@ -919,10 +969,7 @@ process multiqc {
     modules_list = params.counts == 'HTseqCounts' ? "${modules_list} -m htseq" : "${modules_list}"  
  
     """
-    stats2multiqc.sh ${splan} ${params.aligner} ${isPE}
-    ##max_read_nb="\$(awk -F, 'BEGIN{a=0}(\$1>a){a=\$3}END{print a}' mq.stats)"
-    median_read_nb="\$(sort -t, -k3,3n mq.stats | awk -F, '{a[i++]=\$3;} END{x=int((i+1)/2); if (x<(i+1)/2) print(a[x-1]+a[x])/2; else print a[x-1];}')"
-    mqc_header.py --name "RNA-seq" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} --nbreads \${median_read_nb} > multiqc-config-header.yaml
+    mqc_header.py --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
     multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml $modules_list
     """    
 }
