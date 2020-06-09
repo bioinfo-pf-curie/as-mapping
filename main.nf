@@ -132,8 +132,8 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 }
 
 // Stage config files
-ch_multiqc_config = Channel.fromPath(params.multiqc_config)
-ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
+chMultiqcConfig = Channel.fromPath(params.multiqc_config)
+chOutputDocs = Channel.fromPath("$baseDir/docs/output.md")
 
 /*
  * CHANNELS
@@ -156,7 +156,7 @@ if (params.asfasta ){
 if (params.snpFile){
  Channel.fromPath("${params.snpFile}")
          .ifEmpty { exit 1, "SNP file not found: ${params.snpFile}" }
-         .into { chSnpFile }
+         .set { chSnpFile }
 }else{
   chSnpFile=Channel.empty()
 }
@@ -663,16 +663,80 @@ if ( params.aligner == 'hisat2' ){
   }
 }
 
-
 if (params.aligner == 'star'){
-  chBams = starBam
+  starBam.into{chNmaskBams; chBams}
 }else if (params.aligner == 'bowtie2'){
-  chBams = bowtie2Bam
+  bowtie2Bam.into{chNmaskBams; chBams}
 }else if (params.aligner == 'hisat2'){
-  chBams = hisat2Bam
+  hisat2Bam.into{chNmaskBams; chBams}
 }else if (params.aligner == 'tophat2'){
-  chBams = tophat2Bam
+  tophat2Bam.into{chNmaskBams; chBams}
 }
+
+/*****************************
+ * Tag allele-specific reads
+ */
+
+// Parental mapping
+process tagParentalBams {
+  tag "${prefix}"
+  label 'process_low'
+  publishDir "${params.outdir}/taggedBam", mode: 'copy',
+              saveAs: {filename ->
+              if (filename.indexOf(".log") > 0) "logs/$filename"
+              else filename}
+
+  when:
+  !params.nmask
+
+  input:
+  set val(prefix), file(bams) from chBams.groupTuple()
+
+  output:
+  set val(prefix), file("${prefix}_parentalMerged.bam") into chTagParentalBams
+  file("*.log") into parentalLog
+
+  script:
+  opts = params.singleEnd ? "" : "--pairedEnd"
+  """
+  mergeParentalMapping.py -p ${bams[0]} -m ${bams[1]} -o ${prefix}_parentalMerged.bam $opts
+  mv mergeAlignReport.log ${prefix}_mergeAlignReport.log
+  """
+}
+
+
+// N-mask mapping
+process tagNmaskBams {
+  tag "${prefix}"
+  label 'process_mediummem'
+  publishDir "${params.outdir}/taggedBam", mode: 'copy',
+               saveAs: {filename ->
+               if (filename.indexOf(".log") > 0) "logs/$filename"
+               else filename}
+
+  when:
+  params.nmask
+
+  input:
+  set val(prefix), file(bam) from chNmaskBams
+  file(snpFile) from chSnpFile.collect()
+
+  output:
+  set val(prefix), file("*allele_flagged.bam") into chTagNmaskBams
+
+  script:
+  opts = params.singleEnd ? "" : "--paired --singletons"
+  """
+  SNPsplit ${opts} --snp_file ${snpFile} ${bam}
+  """
+}
+
+if (params.nmask){
+  chTagNmaskBams.into{chTagBams ; chTagBamsPicard}
+}else{
+  chTagParentalBams.into{chTagBams ; chTagBamsPicard}
+}
+
 
 /****************************
  * BAM filering
@@ -685,80 +749,47 @@ process markDuplicates{
     saveAs: {filename ->
              if (!filename.endsWith(".bam") && !filename.endsWith(".bam.bai") ) "stats/$filename"
              else if ( (filename.endsWith(".bam") || (filename.endsWith(".bam.bai"))) ) filename
-             else null
-            }
+             else null}
 
   when:
   params.rmDups
 
   input:
-  set val(prefix), file(bams) from chBams
+  set val(prefix), file(bams) from chTagBamsPicard
 
   output:
-  set val(prefix), file("*marked.bam}") into chMarkedBams
+  set val(prefix), file("*marked.bam") into chMarkedBams
   file "*.txt" into chMarkedPicstats
 
   script:
+  pfix=bams.toString() - ~/(.bam)?$/
   """
-  samtools sort ${bams} -@ ${task.cpus} -T ${prefix} -o ${prefix}_sorted.bam
-
+  ## Sort by coordinates
+  samtools sort ${bams} -@ ${task.cpus} -T ${prefix} -o ${pfix}_sorted.bam
   picard -Xmx4g MarkDuplicates \\
-    INPUT=${prefix}_sorted.bam \\
-    OUTPUT=${prefix}_marked.bam \\
-    ASSUME_SORTED=true \\
+    INPUT=${pfix}_sorted.bam \\
+    OUTPUT=${pfix}_marked.bam \\
     REMOVE_DUPLICATES=true \\
-    METRICS_FILE=${prefix}.MarkDuplicates.metrics.txt \\
+    METRICS_FILE=${pfix}.MarkDuplicates.metrics.txt \\
     VALIDATION_STRINGENCY=LENIENT \\
     TMP_DIR=tmpdir
+
+  ## Back to query name sort
+  samtools sort -n ${pfix}_marked.bam -@ ${task.cpus} -T ${prefix} -o ${pfix}_marked_sorted.bam
+  mv ${pfix}_marked_sorted.bam ${pfix}_marked.bam
   """
 }
 
-if (params.nmask){
-  if (params.rmDups){
-    chFiltNmaskBams = chMarkedBams
-  }else{
-    chFiltNmaskBams = chBams
-  }
+if (params.rmDups){
+  chFiltBams = chMarkedBams
 }else{
-  if (params.rmDups){
-    chFiltBams = chMarkedBams.groupTuple()
-  }else{
-    chFiltBams = chBams.groupTuple()
-  }
+  chFiltBams = chTagBams 
 }
 
 
-/*****************************
- * Tag allele-specific reads
- */
-
-// Parental mapping
-process mergeParentalBams {
-  tag "${prefix}"
-  label 'process_low'
-  publishDir "${params.outdir}/taggedBam", mode: 'copy',
-              saveAs: {filename ->
-              if (filename.indexOf(".log") > 0) "logs/$filename"
-              else filename}
-
-  when:
-  !params.nmask
-
-  input:
-  set val(prefix), file(bams) from chFiltBams  
-
-  output:
-  set val(prefix), file("${prefix}_parentalMerged.bam") into parentalBams, parentalBams2split
-  file("*.log") into parentalLog
-
-  script:
-  opts = params.singleEnd ? "" : "--pairedEnd"
-  """
-  mergeParentalMapping.py -p ${bams[0]} -m ${bams[1]} -o ${prefix}_parentalMerged.bam $opts
-  mv mergeAlignReport.log ${prefix}_mergeAlignReport.log
-  """
-}
-                                                                                                                                                                                                     
+/***************************
+ * Split genome1/genome2
+ */ 
 process splitTaggedBam {
   tag "${prefix}"
   label 'process_low'
@@ -771,50 +802,19 @@ process splitTaggedBam {
   !params.nmask
 
   input:
-  set val(prefix), file(asBam) from parentalBams2split
+  set val(prefix), file(asBam) from chFiltBams
 
   output:
-  set val(prefix), file("*genome1.bam"), file("*genome2.bam") into genomeParentalBams
+  set val(prefix), file("*genome1.bam"), file("*genome2.bam") into genomeBams
 
   script:
   opts = params.singleEnd ? "" : "--paired --singletons"
   """
   tag2sort ${opts} ${asBam}
   """
-}                 
-
-// N-mask mapping
-process snpSplitTag {
-  tag "${prefix}"
-  label 'process_mediummem'
-  publishDir "${params.outdir}/taggedBam", mode: 'copy',
-               saveAs: {filename ->
-               if (filename.indexOf(".log") > 0) "logs/$filename"
-               else filename}
-
-  when:
-  params.nmask
-
-  input:
-  set val(prefix), file(bam) from chFiltNmaskBams
-  file(snpFile) from chSnpFile.collect()
-
-  output:
-  set val(prefix), file("*allele_flagged.bam") into nmaskBams
-  set val(prefix), file("*genome1.bam"), file("*genome2.bam") into genomeNmaskBams
-
-  script:
-  opts = params.singleEnd ? "" : "--paired --singletons"
-  """
-  SNPsplit ${opts} --snp_file ${snpFile} ${bam}
-  """
 }
 
-if (params.nmask){
-  genomeNmaskBams.join(nmaskBams).into{chBamCount; chBamWig}
-}else{
-  genomeParentalBams.join(parentalBams).into{chBamCount; chBamWig}
-}
+genomeBams.join(chTagBams).into{chBamCount; chBamWig}
 
 
 /*************************
@@ -911,9 +911,10 @@ process get_software_versions {
   echo $workflow.manifest.version &> v_main.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
   hisat2 --version &> v_hisat2.txt
-  tophat2 --version &> v_tophat2.tx
-  STAR --version &> v_star.tx
-  bowtie2 --version &> v_bowtie2.tx
+  #tophat2 --version &> v_tophat2.txt
+  echo "TopHat vXXX" > v_tophat2.txt
+  STAR --version &> v_star.txt
+  bowtie2 --version &> v_bowtie2.txt
   picard MarkDuplicates --version &> v_markduplicates.txt || true
   echo \$(plotFingerprint --version 2>&1) > v_deeptools.txt || true
   featureCounts -v &> v_featurecounts.txt
@@ -955,7 +956,7 @@ process multiqc {
     input:
     file splan from ch_splan.collect()
     file metadata from ch_metadata.ifEmpty([])
-    file multiqc_config from ch_multiqc_config    
+    file multiqc_config from chMultiqcConfig    
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
 
@@ -970,17 +971,12 @@ process multiqc {
     metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
     splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
     isPE = params.singleEnd ? 0 : 1
-    
-    modules_list = "-m custom_content -m preseq -m rseqc -m bowtie2 -m hisat2 -m star -m tophat -m cutadapt -m fastqc"
-    modules_list = params.counts == 'featureCounts' ? "${modules_list} -m featureCounts" : "${modules_list}"  
-    modules_list = params.counts == 'HTseqCounts' ? "${modules_list} -m htseq" : "${modules_list}"  
- 
+     
     """
     mqc_header.py --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
-    multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml $modules_list
+    multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml
     """    
 }
-*/
 
 
 /*
@@ -990,14 +986,14 @@ process output_documentation {
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
 
     input:
-    file output_docs from ch_output_docs
+    file output_docs from chOutputDocs
 
     output:
     file "results_description.html"
 
     script:
     """
-    markdown_to_html.r $output_docs results_description.html
+    markdown_to_html.py $output_docs -o results_description.html
     """
 }
 

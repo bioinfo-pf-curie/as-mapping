@@ -143,26 +143,28 @@ Here are a few examples. Note that in the case of parental mapping, references o
 
 ```
 nextflow run main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --saveReference \
---asfasta '/data/tmp/asmapping_testop/CAST_EiJ_maternal_genome.fa,/data/tmp/asmapping_testop/129S1_SvImJ_paternal_genome.fa' \
+--asfasta '/data/tmp/asmapping_testop/reference_genome/CAST_EiJ_maternal_genome.fa,/data/tmp/asmapping_testop/reference_genome/129S1_SvImJ_paternal_genome.fa' \
 --outdir /data/tmp/asmap_skipref
 ```
 
 ```
 nextflow run main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --saveReference \
---asfasta '/data/tmp/asmapping_testop/CAST_EiJ_129S1_SvImJ_nmask_genome.fa' --nmask --outdir /data/tmp//asmap_skipref_nmask
+--asfasta '/data/tmp/asmapping_testop/reference_genome/CAST_EiJ_129S1_SvImJ_nmask_genome.fa' --nmask \
+--outdir /data/tmp/asmap_skipref_nmask
 ```
 
 #### Skip genome(s) indexing
 
 ```
 nextflow run main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' \
---bowtie2Index '/data/tmp/asmapping_testop/CAST_EiJ_bowtie2_index/,/data/tmp/asmapping_testop/129S1_SvImJ_bowtie2_index/' \
+--bowtie2Index '/data/tmp/asmapping_testop/reference_genome/CAST_EiJ_bowtie2_index/,/data/tmp/asmapping_testop/reference_genome/129S1_SvImJ_bowtie2_index/' \
 --outdir /data/tmp/nservant/asmap_bwt2 
 ```
 
 ```
 nextflow run main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' \
---bowtie2Index '/data/tmp/asmapping_testop/CAST_EiJ_129S1_SvImJ_bowtie2_index/' --nmask \
+--bowtie2Index '/data/tmp/asmapping_testop/reference_genome/CAST_EiJ_129S1_SvImJ_bowtie2_index/' --nmask \
+--snpFile '/data/tmp/asmapping_testop/reference_genome/all_CAST_EiJ_SNPs_129S1_SvImJ_reference.based_on_GRCm38.txt' \
 --outdir /data/tmp/asmap_bwt2_nmask
 ```
 

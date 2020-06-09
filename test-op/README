@@ -69,9 +69,3 @@ echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main
 -w /data/tmp/nservant/asmap_hisat2_nmask/work" | qsub -N  "asmap_hisat2_nmask"
 
 
-
-
-
-/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' \
---bowtie2Index '/data/tmp/nservant/asmap_1/reference_genome/indexes/CAST_EiJ_bowtie2_index/,/data/tmp/nservant/asmap_1/reference_genome/indexes/129S1_SvImJ_bowtie2_index/' \
---outdir /data/tmp/nservant/asmap_1 -w /data/tmp/nservant/asmap_1/work
