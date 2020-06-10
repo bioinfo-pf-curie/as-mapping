@@ -332,9 +332,9 @@ if(params.aligner == 'star'){
   if(params.hisat2Index) summary['HISAT2 Index'] = params.hisat2Index
 }
 if ( params.nmask ){
-  summary['Mapping Strategy'] = 'N-mask'
+  summary['Mapping'] = 'N-mask'
 }else{
-  summary['Mapping Strategy'] = 'Parental'
+  summary['Mapping'] = 'Parental'
 }
 summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
@@ -465,7 +465,7 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
   }
 
   process makeHisat2Index {
-    label 'process_high'
+    label 'process_extra'
     publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
          saveAs: {filename -> if (params.saveReference) filename else null }
 
