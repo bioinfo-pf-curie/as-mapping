@@ -509,12 +509,12 @@ if ( params.aligner == 'star' ){
     file gtf from gtfStar.collect().ifEmpty([])
 
     output:
-    set val(prefix), file ('*.bam') into starBam
+    set val(prefix), file ("*bam") into starBam
     file "*Log.final.out" into starLogs
 
     script:
     def gtfOpts = params.gtf ? "--sjdbGTFfile $gtf" : ''
-    def mandatoryOpts = "--alignEndsType EndToEnd --outSAMattributes NH HI NM MD --outSAMtype BAM Unsorted"
+    def mandatoryOpts = "--alignEndsType EndToEnd --outSAMattributes NH HI NM AS MD --outSAMtype BAM Unsorted --outSAMunmapped Within"
     def genomeBase = index.baseName - ~/_STAR_index$/
     """
     STAR --genomeDir $index \\
@@ -527,7 +527,11 @@ if ( params.aligner == 'star' ){
        --runDirPerm All_RWX \\
        --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
        --outFileNamePrefix ${prefix}_${genomeBase}  \\
-       --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina  \\
+       --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina
+
+    ## sort by read name
+    samtools sort -n ${prefix}_${genomeBase}Aligned.out.bam -@ ${task.cpus} -T ${prefix} -o ${prefix}_${genomeBase}_sorted.bam 
+    mv ${prefix}_${genomeBase}_sorted.bam ${prefix}_${genomeBase}Aligned.out.bam
     """
   }
 }
@@ -674,6 +678,10 @@ if (params.aligner == 'star'){
 /*****************************
  * Tag allele-specific reads
  */
+
+if (!params.nmask){
+  chSnpFile = Channel.empty()
+}
 
 // Parental mapping
 process tagParentalBams {
