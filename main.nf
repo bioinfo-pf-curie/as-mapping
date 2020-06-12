@@ -152,7 +152,7 @@ if (params.asfasta ){
 }else if (params.fasta){
   Channel.fromPath("${params.fasta}")
          .ifEmpty { exit 1, "Reference Genome not found: ${params.fasta}" }
-         .into { fastaGenomeParental; fastaGenomeNmask }
+         .into { fastaParentalGenome; fastaNmaskGenome }
 }
 
 
@@ -194,7 +194,7 @@ if ( params.starIndex ){
 if (params.vcf){
   Channel.fromPath("${params.vcf}")
          .ifEmpty { exit 1, "Variant database not found: ${params.vcf}" }
-         .into { vcfGenomeParental; vcfGenomeNmask }
+         .into { vcfParentalGenome; vcfNmaskGenome }
 }else{
   exit 1, "Variants (.vcf) file not found: ${params.vcf}"
 }
@@ -224,90 +224,100 @@ if ( params.metadata ){
        .set { ch_metadata }
 }
 
-if (params.refOnly){
-  params.saveReference = true
-}
-
 /*
  * Create channels for input read files
  */
 
-if(params.samplePlan){
-   if(params.singleEnd){
-      Channel
-         .from(file("${params.samplePlan}"))
-         .splitCsv(header: false)
-         .map{ row -> [ row[0], [file(row[2])]] }
-         .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
-   }else{
-      Channel
-         .from(file("${params.samplePlan}"))
-         .splitCsv(header: false)
-         .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-         .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
-   }
-   params.reads=false
-}
-else if(params.readPaths){
+if (!params.refOnly){
+  if(params.samplePlan){
     if(params.singleEnd){
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [file(row[1][0])]] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
-    } else {
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
-    }
-} else {
-    Channel
-        .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-        .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
+      Channel
+        .from(file("${params.samplePlan}"))
+        .splitCsv(header: false)
+        .map{ row -> [ row[0], [file(row[2])]] }
         .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
-}
+    }else{
+      Channel
+        .from(file("${params.samplePlan}"))
+        .splitCsv(header: false)
+        .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
+        .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+    }
+    params.reads=false
+  }
+  else if(params.readPaths){
+    if(params.singleEnd){
+      Channel
+        .from(params.readPaths)
+        .map { row -> [ row[0], [file(row[1][0])]] }
+        .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+        .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+    } else {
+      Channel
+        .from(params.readPaths)
+        .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
+        .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+        .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+    }
+  } else {
+    Channel
+      .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
+      .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
+      .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+  }
 
 /*
  * Make sample plan if not available
  */
 
-if (params.samplePlan){
-  ch_splan = Channel.fromPath(params.samplePlan)
-}else if(params.readPaths){
-  if (params.singleEnd){
-    Channel
-       .from(params.readPaths)
-       .collectFile() {
-         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
+  if (params.samplePlan){
+    chSplan = Channel.fromPath(params.samplePlan)
+  }else if(params.readPaths){
+    if (params.singleEnd){
+      Channel
+        .from(params.readPaths)
+        .collectFile() {
+          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
         }
-       .set{ ch_splan }
+        .set{ chSplan }
+    }else{
+      Channel
+        .from(params.readPaths)
+        .collectFile() {
+          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
+        }
+        .set{ chSplan }
+    }
   }else{
-     Channel
-       .from(params.readPaths)
-       .collectFile() {
-         item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
-        }
-       .set{ ch_splan }
+    if (params.singleEnd){
+      Channel
+        .fromFilePairs( params.reads, size: 1 )
+        .collectFile() {
+          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
+         }     
+         .set { chSplan }
+    }else{
+      Channel
+        .fromFilePairs( params.reads, size: 2 )
+        .collectFile() {
+          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
+        }     
+        .set { chSplan }
+     }
   }
 }else{
-  if (params.singleEnd){
-    Channel
-       .fromFilePairs( params.reads, size: 1 )
-       .collectFile() {
-          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
-       }     
-       .set { ch_splan }
-  }else{
-    Channel
-       .fromFilePairs( params.reads, size: 2 )
-       .collectFile() {
-          item -> ["sample_plan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
-       }     
-       .set { ch_splan }
-   }
+  chSplan = Channel.empty()
 }
+
+// Gentoypes
+if (!params.maternal && !params.paternal){
+  exit 1, "Error: specify at least one genotype using --maternal or --paternal"
+} 
+
+if (params.refOnly){
+  params.saveReference = true
+} 
+
 
 // Header log info
 if ("${workflow.manifest.version}" =~ /dev/ ){
@@ -325,10 +335,12 @@ summary['Command Line'] = workflow.commandLine
 summary['Metadata']	= params.metadata
 if (params.samplePlan) {
    summary['SamplePlan']   = params.samplePlan
-}else{
+}else if (params.reads) {
    summary['Reads']        = params.reads
 }
-summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
+if (! params.refOnly){
+  summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
+}
 summary['Genome']       = params.genome
 if(params.aligner == 'star'){
   summary['Aligner'] = "star"
@@ -348,6 +360,8 @@ if ( params.nmask ){
 }else{
   summary['Mapping'] = 'Parental'
 }
+summary['Paternal Genome'] = params.paternal ?: params.vcfRef
+summary['Maternal Genome'] = params.maternal ?: params.vcfRef
 summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
@@ -371,7 +385,55 @@ log.info "========================================="
  */
 
 if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisat2Index){
-  process prepareReferenceGenome {
+
+  process prepareParentalReferenceGenome {
+    label 'process_highmem'
+    publishDir "${params.outdir}/reference_genome", mode: 'copy',
+        saveAs: {filename ->
+                 if (filename.indexOf("_report.txt") > 0) "logs/$filename"
+                 else if (params.saveReference) filename
+                 else null
+                }
+    when:
+    !params.nmask
+
+    input:
+    file reference from fastaParentalGenome.collect()
+    file vcf from vcfParentalGenome.collect()
+
+    output:
+    file("*_report.txt") into chGenomeParentalReport
+    file("*_genome.fa") into chGenomeParentalFasta
+
+    script:
+    //Dual Strain 
+    if (params.maternal && params.paternal){
+      opts_strain = "--strain ${params.paternal} --strain2 ${params.maternal}"
+      """
+      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} --no_nmasking
+      cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
+      cat ${params.maternal}_full_sequence/*.fa > ${params.maternal}_maternal_genome.fa
+      """
+    //Maternal-REF
+    }else if (params.maternal && !params.paternal){
+      opts_strain = "--strain ${params.maternal}"
+      """
+      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} --no_nmasking
+      cat ${reference}/*.fa > ${params.vcfRef}_paternal_genome.fa
+      cat ${params.maternal}_full_sequence/*.fa* > ${params.maternal}_maternal_genome.fa
+      """
+    //REF-Paternal
+    }else if (!params.maternal && params.paternal){
+      opts_strain = "--strain ${params.paternal}"
+      """
+      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} --no_nmasking
+      cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
+      cat ${reference}/*.fa* > ${params.vcfRef}_maternal_genome.fa
+      """
+    }
+  }
+
+  process prepareNmaskReferenceGenome {
     label 'process_highmem'
     publishDir "${params.outdir}/reference_genome", mode: 'copy',
         saveAs: {filename ->
@@ -380,33 +442,46 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
                  else null
                 }
 
+    when:
+    params.nmask
+
     input:
-    file reference from fastaGenomeParental.collect()
-    file vcf from vcfGenomeParental.collect()
+    file reference from fastaNmaskGenome.collect()
+    file vcf from vcfNmaskGenome.collect()
 
     output:
-    file("*_report.txt") into parentalGenomeReport
-    file("*genome.fa") into (genomeFastaStar, genomeFastaBowtie2, genomeFastaHisat2)
-    file("all*.txt") into chSnpFile  
+    file("*_report.txt") into chGenomeNmaskReport
+    file("*genome.fa") into chGenomeNmaskFasta
+    file("all*.txt.gz") into chSnp
 
     script:
     if (params.maternal && params.paternal){
       opts_strain = "--strain ${params.paternal} --strain2 ${params.maternal}"
+      nmaskPattern = "*dual_hybrid*_N-masked/*.fa"
+      opref = "${params.maternal}_${params.paternal}"
     }else{
-      opts_strain = params.maternal ? " --strain ${params.maternal}" : "--strain ${params.paternal}" 
+      opts_strain = params.maternal ? " --strain ${params.maternal}" : "--strain ${params.paternal}"
+      nmaskPattern = "*_N-masked/*.fa"
+      opref = params.maternal ? "${params.maternal}_${params.vcfRef}" : "${params.vcfRef}_${params.paternal}"
     }
-    if (!params.nmask){
-    """
-    SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} --no_nmasking
-    cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
-    cat ${params.maternal}_full_sequence/*.fa > ${params.maternal}_maternal_genome.fa
-    """
-    }else{
     """
     SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
-    cat *dual_hybrid*_N-masked/*.fa > ${params.maternal}_${params.paternal}_nmask_genome.fa
+    cat ${nmaskPattern} > ${opref}_nmask_genome.fa
     """
-    }
+  }
+
+  if (params.nmask){
+    chGenomeNmaskFasta.into{genomeFastaStar; genomeFastaBowtie2; genomeFastaHisat2}
+    chGenomeReport = chGenomeNmaskReport
+    chSnpFile = chSnp
+  }else{
+    chGenomeParentalFasta.into{genomeFastaStar; genomeFastaBowtie2; genomeFastaHisat2}
+    chGenomeReport = chGenomeParentalReport
+    chSnpFile = Channel.empty()
+  }
+}else{
+  if(!params.nmask){
+    chSnpFile = Channel.empty()
   }
 }
 
@@ -695,10 +770,6 @@ if (params.refOnly){
  * Tag allele-specific reads
  */
 
-if (!params.nmask){
-  chSnpFile = Channel.empty()
-}
-
 // Parental mapping
 process tagParentalBams {
   tag "${prefix}"
@@ -977,7 +1048,7 @@ process multiqc {
     !params.skipMultiqc
 
     input:
-    file splan from ch_splan.collect()
+    file splan from chSplan.collect()
     file metadata from ch_metadata.ifEmpty([])
     file multiqc_config from chMultiqcConfig    
     file ('software_versions/*') from software_versions_yaml.collect()
