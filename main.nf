@@ -452,22 +452,27 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
     output:
     file("*_report.txt") into chGenomeNmaskReport
     file("*genome.fa") into chGenomeNmaskFasta
-    file("all*.txt.gz") into chSnp
+    file("all*.txt") into chSnp
 
     script:
     if (params.maternal && params.paternal){
       opts_strain = "--strain ${params.paternal} --strain2 ${params.maternal}"
       nmaskPattern = "*dual_hybrid*_N-masked/*.fa"
       opref = "${params.maternal}_${params.paternal}"
+      """
+      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
+      cat ${nmaskPattern} > ${opref}_nmask_genome.fa
+      """                                            
     }else{
       opts_strain = params.maternal ? " --strain ${params.maternal}" : "--strain ${params.paternal}"
       nmaskPattern = "*_N-masked/*.fa"
       opref = params.maternal ? "${params.maternal}_${params.vcfRef}" : "${params.vcfRef}_${params.paternal}"
+      """
+      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
+      cat ${nmaskPattern} > ${opref}_nmask_genome.fa
+      gunzip all*gz
+      """
     }
-    """
-    SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
-    cat ${nmaskPattern} > ${opref}_nmask_genome.fa
-    """
   }
 
   if (params.nmask){
