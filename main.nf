@@ -414,7 +414,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
       cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
       cat ${params.maternal}_full_sequence/*.fa > ${params.maternal}_maternal_genome.fa
       """
-    //Maternal-REF
+    //Maternal vs REF
     }else if (params.maternal && !params.paternal){
       opts_strain = "--strain ${params.maternal}"
       """
@@ -422,7 +422,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
       cat ${reference}/*.fa > ${params.vcfRef}_paternal_genome.fa
       cat ${params.maternal}_full_sequence/*.fa* > ${params.maternal}_maternal_genome.fa
       """
-    //REF-Paternal
+    //REF vs Paternal
     }else if (!params.maternal && params.paternal){
       opts_strain = "--strain ${params.paternal}"
       """
@@ -459,6 +459,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
       opts_strain = "--strain ${params.paternal} --strain2 ${params.maternal}"
       nmaskPattern = "*dual_hybrid*_N-masked/*.fa"
       opref = "${params.maternal}_${params.paternal}"
+      // Dual hybrid
       """
       SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
       cat ${nmaskPattern} > ${opref}_nmask_genome.fa
@@ -467,6 +468,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
       opts_strain = params.maternal ? " --strain ${params.maternal}" : "--strain ${params.paternal}"
       nmaskPattern = "*_N-masked/*.fa"
       opref = params.maternal ? "${params.maternal}_${params.vcfRef}" : "${params.vcfRef}_${params.paternal}"
+      // Maternal or Paternal vs REF
       """
       SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
       cat ${nmaskPattern} > ${opref}_nmask_genome.fa
