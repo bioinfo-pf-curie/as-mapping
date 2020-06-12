@@ -1,29 +1,55 @@
 ## Full usage
 
 #echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --saveReference \
---nmask --outdir /data/tmp/nservant/asmap_1_nmask -w /data/tmp/nservant/asmap_1_nmask/work" | qsub -N "asmap_1_nmask"
+--nmask --outdir /data/tmp/nservant/asmap_1_nmask -w /data/tmp/nservant/asmap_1_nmask/work --useGtf --asratio --bigwig" | qsub -N "asmap_1_nmask"
 
 #echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --saveReference \
+--outdir /data/tmp/nservant/asmap_1 -w /data/tmp/nservant/asmap_1/work --useGtf --asratio --bigwig" | qsub -N "asmap_1"
+
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' --saveReference \
+--nmask --outdir /data/tmp/nservant/asmap_2_nmask -w /data/tmp/nservant/asmap_2_nmask/work --useGtf --asratio --bigwig" | qsub -N "asmap_2_nmask"
+
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' --saveReference \
+--outdir /data/tmp/nservant/asmap_2 -w /data/tmp/nservant/asmap_2/work --useGtf --asratio --bigwig" | qsub -N "asmap_2"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'tophat2' --saveReference \
+--nmask --outdir /data/tmp/nservant/asmap_3_nmask -w /data/tmp/nservant/asmap_3_nmask/work --useGtf --asratio --bigwig" | qsub -N "asmap_3_nmask"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'tophat2' --saveReference \
+--outdir /data/tmp/nservant/asmap_3 -w /data/tmp/nservant/asmap_3/work --useGtf --asratio --bigwig" | qsub -N "asmap_3"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --saveReference \
+--nmask --outdir /data/tmp/nservant/asmap_4_nmask -w /data/tmp/nservant/asmap_4_nmask/work --useGtf --asratio --bigwig" | qsub -N "asmap_4_nmask"
+
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --saveReference \
+--outdir /data/tmp/nservant/asmap_4 -w /data/tmp/nservant/asmap_4/work --useGtf --asratio --bigwig" | qsub -N "asmap_4"
+
+## Ref only
+                                                                                                                                                                                                        
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --refOnly \
+--nmask --outdir /data/tmp/nservant/asmap_1_nmask -w /data/tmp/nservant/asmap_1_nmask/work" | qsub -N "asmap_1_nmask"
+
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'bowtie2' --refOnly \
 --outdir /data/tmp/nservant/asmap_1 -w /data/tmp/nservant/asmap_1/work" | qsub -N "asmap_1"
 
-#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' --saveReference \
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' --refOnly \
 --nmask --outdir /data/tmp/nservant/asmap_2_nmask -w /data/tmp/nservant/asmap_2_nmask/work" | qsub -N "asmap_2_nmask"
 
-#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' --saveReference \
+#echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'star' --refOnly \
 --outdir /data/tmp/nservant/asmap_2 -w /data/tmp/nservant/asmap_2/work" | qsub -N "asmap_2"
 
-echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'tophat2' --saveReference \
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'tophat2' --refOnly \
 --nmask --outdir /data/tmp/nservant/asmap_3_nmask -w /data/tmp/nservant/asmap_3_nmask/work" | qsub -N "asmap_3_nmask"
 
-echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'tophat2' --saveReference \
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'tophat2' --refOnly \
 --outdir /data/tmp/nservant/asmap_3 -w /data/tmp/nservant/asmap_3/work" | qsub -N "asmap_3"
 
-echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --saveReference \
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --refOnly \
 --nmask --outdir /data/tmp/nservant/asmap_4_nmask -w /data/tmp/nservant/asmap_4_nmask/work" | qsub -N "asmap_4_nmask"
 
-echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --saveReference \
+echo "/bioinfo/local/build/Centos/nextflow/nextflow run ~/GitLab/as-mapping/main.nf -profile cluster,toolsPath,test --aligner 'hisat2' --refOnly \
 --outdir /data/tmp/nservant/asmap_4 -w /data/tmp/nservant/asmap_4/work" | qsub -N "asmap_4"
-
+          
 
 ## Skip Reference Preparation
 

@@ -73,6 +73,7 @@ def helpMessage() {
       --tophat2Index [file]         Path to TopHat2 index
 
     Analysis (RNA-seq)
+      --useGtf                      Specify to use the GTF file for RNA-seq mapping
       --asratio                     Generate allele-specific ratio table per gene
 
     Analysis (ChIP-seq)
@@ -87,7 +88,8 @@ def helpMessage() {
       -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
     Skip options:
-      --skip_multiqc                Skip MultiQC
+      --refOnly                     Prepare annotation only. All analysis steps are skipped
+      --skipMultiqc                 Skip MultiQC
 
     =======================================================
     Available Profiles
@@ -153,6 +155,12 @@ if (params.asfasta ){
          .into { fastaGenomeParental; fastaGenomeNmask }
 }
 
+
+// snpFile
+if ((params.starIndex || params.bowtie2Index || params.hisat2Index) && params.nmask && !params.snpFile){
+  exit 1, "Using existing reference but snp file is not provided. Please define --snpFile !"       
+}
+
 if (params.snpFile){
  Channel.fromPath("${params.snpFile}")
          .ifEmpty { exit 1, "SNP file not found: ${params.snpFile}" }
@@ -196,7 +204,7 @@ if( params.gtf ){
     Channel
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
-        .into { gtfStarIndex; gtfStar; gtfHisat2Splicesites; gtfHisat2; gtfHisat2Index; gtfTophat2; chGtf }
+        .into { gtfStar; gtfHisat2Splicesites; gtfHisat2; gtfHisat2Index; gtfTophat2; chGtf }
 }
 
 // Blacklist
@@ -214,6 +222,10 @@ if ( params.metadata ){
        .fromPath( params.metadata )
        .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
        .set { ch_metadata }
+}
+
+if (params.refOnly){
+  params.saveReference = true
 }
 
 /*
@@ -410,13 +422,12 @@ if ( params.aligner == 'star' && !params.starIndex ){
 
     input:
     file(fasta) from genomeFastaStar.flatten()
-    file gtf from gtfStarIndex.collect()
 
     output:
     file "*STAR_index" into starIdx
 
     script:
-    strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
     """
     mkdir -p ${strainPrefix}_STAR_index
     STAR --runMode genomeGenerate --runThreadN ${task.cpus} --genomeDir ${strainPrefix}_STAR_index --genomeFastaFiles $fasta
@@ -437,7 +448,7 @@ if ( (params.aligner == "bowtie2" || params.aligner == "tophat2") && !params.bow
     file("${strainPrefix}_bowtie2_index") into (bowtie2Idx, tophat2Idx)
 
     script:
-    strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
     base = fasta.toString() - ~/(\.fa)?(\.fasta)?(\.fas)?$/
     """
     mkdir -p ${strainPrefix}_bowtie2_index
@@ -478,7 +489,7 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
     file("${strainPrefix}_hisat2_index") into hisat2Idx
 
     script:
-    strainPrefix = fasta.toString() - ~/(\_nmask_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
     base = fasta.toString() - ~/(\.fa)?(\.fasta)?(\.fas)?$/
     """
     mkdir -p ${strainPrefix}_hisat2_index
@@ -494,7 +505,7 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
  */
 
 // STAR
-if ( params.aligner == 'star' ){
+if ( params.aligner == 'star' && !params.refOnly ){
   process star {
     tag "$prefix"
     label 'process_high'
@@ -513,7 +524,7 @@ if ( params.aligner == 'star' ){
     file "*Log.final.out" into starLogs
 
     script:
-    def gtfOpts = params.gtf ? "--sjdbGTFfile $gtf" : ''
+    def gtfOpts = params.gtf && params.useGtf ? "--sjdbGTFfile $gtf" : ''
     def mandatoryOpts = "--alignEndsType EndToEnd --outSAMattributes NH HI NM AS MD --outSAMtype BAM Unsorted --outSAMunmapped Within"
     def genomeBase = index.baseName - ~/_STAR_index$/
     """
@@ -537,7 +548,7 @@ if ( params.aligner == 'star' ){
 }
 
 // Bowtie2
-if ( params.aligner == 'bowtie2' ){
+if ( params.aligner == 'bowtie2'  && !params.refOnly){
   process bowtie2 {
     tag "$prefix"
     label 'process_medium'
@@ -572,7 +583,7 @@ if ( params.aligner == 'bowtie2' ){
 
 
 // TopHat2
-if(params.aligner == 'tophat2'){
+if(params.aligner == 'tophat2' && !params.refOnly){
   process tophat2 {
     tag "$prefix"
     label 'process_high'
@@ -622,7 +633,7 @@ if(params.aligner == 'tophat2'){
 
 
 // HiSat2
-if ( params.aligner == 'hisat2' ){
+if ( params.aligner == 'hisat2' && !params.refOnly){
   process hisat2 {
     tag "$prefix"
     label 'process_high'
@@ -665,14 +676,19 @@ if ( params.aligner == 'hisat2' ){
   }
 }
 
-if (params.aligner == 'star'){
-  starBam.into{chNmaskBams; chBams}
-}else if (params.aligner == 'bowtie2'){
-  bowtie2Bam.into{chNmaskBams; chBams}
-}else if (params.aligner == 'hisat2'){
-  hisat2Bam.into{chNmaskBams; chBams}
-}else if (params.aligner == 'tophat2'){
-  tophat2Bam.into{chNmaskBams; chBams}
+if (params.refOnly){
+  chNmaskBams = Channel.empty()
+  chBams = Channel.empty()
+}else{
+  if (params.aligner == 'star'){
+    starBam.into{chNmaskBams; chBams}
+  }else if (params.aligner == 'bowtie2'){
+    bowtie2Bam.into{chNmaskBams; chBams}
+  }else if (params.aligner == 'hisat2'){
+    hisat2Bam.into{chNmaskBams; chBams}
+  }else if (params.aligner == 'tophat2'){
+    tophat2Bam.into{chNmaskBams; chBams}
+  }
 }
 
 /*****************************
@@ -717,7 +733,7 @@ process tagNmaskBams {
   label 'process_mediummem'
   publishDir "${params.outdir}/taggedBam", mode: 'copy',
                saveAs: {filename ->
-               if (filename.indexOf(".log") > 0) "logs/$filename"
+               if (filename.indexOf(".txt") > 0) "logs/$filename"
                else filename}
 
   when:
@@ -729,6 +745,7 @@ process tagNmaskBams {
 
   output:
   set val(prefix), file("*allele_flagged.bam") into chTagNmaskBams
+  file("*.txt") into tagLog
 
   script:
   opts = params.singleEnd ? "" : "--paired --singletons"
@@ -932,7 +949,7 @@ process get_software_versions {
 
 process workflow_summary_mqc {
   when:
-  !params.skip_multiqc
+  !params.skipMultiqc
 
   output:
   file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
@@ -957,7 +974,7 @@ process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
     when:
-    !params.skip_multiqc
+    !params.skipMultiqc
 
     input:
     file splan from ch_splan.collect()
