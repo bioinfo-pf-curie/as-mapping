@@ -69,7 +69,7 @@ nextflow run main.nf --samplePlan sample_plan --genome mm9 -profile conda
    --fasta                       Path to generic reference genome 
    --vcf                         Path to vcf from Mouse Sanger Project
    --gtf                         Gene annotation (.gtf)
-   --blacklist [file]            Path to black list regions (.bed).
+   --blacklist [file]            Path to black list regions (.bed)
 
  Mapping
    --aligner [str]               Tool for read alignments ['star', 'bowtie2', 'hisat2', 'tophat2']. Default: 'star'
@@ -79,6 +79,7 @@ nextflow run main.nf --samplePlan sample_plan --genome mm9 -profile conda
    --tophat2Index [file]         Path to TopHat2 index
 
  Analysis (RNA-seq)
+   --useGtf                      Specify to use the GTF file for RNA-seq mapping
    --asratio                     Generate allele-specific ratio table per gene
 
  Analysis (ChIP-seq)
@@ -94,7 +95,8 @@ nextflow run main.nf --samplePlan sample_plan --genome mm9 -profile conda
    -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
 
  Skip options:
-   --skip_multiqc                Skip MultiQC
+   --refOnly                    Prepare annotation only. All analysis steps are skipped
+   --skipMultiqc                Skip MultiQC
 
  =======================================================
  Available Profiles
@@ -138,6 +140,18 @@ Some of the steps as building the reference or the genome indexes can take quite
 Therefore, the pipeline should be able to run from a reference file or pre-computed indexes.
 
 Here are a few examples. Note that in the case of parental mapping, references or indexes can be provided using a 'comma' separatated list.
+
+#### Build reference(s) only
+
+```
+nextflow run main.nf -profile cluster,toolsPath,test --aligner 'star' --refOnly \
+--outdir /data/tmp/star/parental
+```
+
+```
+nextflow run main.nf -profile cluster,toolsPath,test --aligner 'star' --refOnly --nmask \
+--outdir /data/tmp/star/nmask
+```
 
 #### Skip genome(s) preparation
 

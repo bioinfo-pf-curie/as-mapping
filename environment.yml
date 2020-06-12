@@ -11,7 +11,7 @@ dependencies:
   - conda-forge::pymdown-extensions=7.1
   - bioconda::snpsplit=0.3.4
   - bioconda::samtools=1.9
-  - bioconda::star=2.6.1b
+  - bioconda::star=2.7.4a
   - bioconda::hisat2=2.1.0
 #  - bioconda::tophat=2.1.1
   - bioconda::bowtie2=2.2.5
