@@ -944,8 +944,8 @@ process geneASratio {
       strandness = "-s 2"
   }
   """
-  featureCounts ${opts} ${strandness} -T ${task.cpus} -a ${gtf} -o ${prefix}_count.txt ${bam1} ${bam2} ${bamTag}
-  awk -F '\\t' -v threshold=2 'BEGIN{OFS="\t"; print "Gene", "Genome1", "Genome2", "allelicRatio_Genome1/all", "allReads"}{\
+  featureCounts ${opts} ${strandness} -T ${task.cpus} -a ${gtf} -g 'gene_name' -o ${prefix}_count.txt ${bam1} ${bam2} ${bamTag}
+  awk -F '\\t' -v threshold=2 'BEGIN{OFS="\t"; print "Gene", "Genome1", "Genome2", "ASratio", "allReads"}{\
       if(\$1!~/^#/ && \$1!="Geneid"){if(\$7+\$8>0 && \$7+\$8>=threshold){as=\$7/(\$7+\$8)}\
       else{as="NA"};print \$1,\$7,\$8,as,\$9}}' ${prefix}_count.txt >  ${prefix}_allelicRatio.txt
   """
