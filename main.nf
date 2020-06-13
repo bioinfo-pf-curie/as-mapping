@@ -899,9 +899,6 @@ process splitTaggedBam {
               if (filename.indexOf(".log") > 0) "logs/$filename"
               else filename}
 
-  when:
-  !params.nmask
-
   input:
   set val(prefix), file(asBam) from chFiltBamsSplit
 
@@ -925,6 +922,7 @@ genomeBams.join(chFiltBams).into{chBamCount; chBamWig}
 process geneASratio {
   tag "${prefix}"
   label 'process_medium'  
+  publishDir "${params.outdir}/asratio", mode: 'copy',
 
   when:
   params.asratio
