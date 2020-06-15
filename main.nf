@@ -378,8 +378,6 @@ if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-
-
 /*
  * PREPROCESSING - Prepare Genome
  */
@@ -410,7 +408,8 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
     if (params.maternal && params.paternal){
       opts_strain = "--strain ${params.paternal} --strain2 ${params.maternal}"
       """
-      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} --no_nmasking
+      mkdir genome; cd genome; ln -s ../${reference}; cd ..
+      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} --no_nmasking
       cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
       cat ${params.maternal}_full_sequence/*.fa > ${params.maternal}_maternal_genome.fa
       """
@@ -418,17 +417,19 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
     }else if (params.maternal && !params.paternal){
       opts_strain = "--strain ${params.maternal}"
       """
-      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} --no_nmasking
-      cat ${reference}/*.fa > ${params.vcfRef}_paternal_genome.fa
+      mkdir genome; cd genome; ln -s ../${reference}; cd ..
+      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} --no_nmasking
+      cat genome/*.fa > ${params.vcfRef}_paternal_genome.fa
       cat ${params.maternal}_full_sequence/*.fa* > ${params.maternal}_maternal_genome.fa
       """
     //REF vs Paternal
     }else if (!params.maternal && params.paternal){
       opts_strain = "--strain ${params.paternal}"
       """
-      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} --no_nmasking
+      mkdir genome; cd genome; ln -s ../${reference}; cd ..
+      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} --no_nmasking
       cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
-      cat ${reference}/*.fa* > ${params.vcfRef}_maternal_genome.fa
+      cat genome/*.fa* > ${params.vcfRef}_maternal_genome.fa
       """
     }
   }
@@ -461,7 +462,8 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
       opref = "${params.maternal}_${params.paternal}"
       // Dual hybrid
       """
-      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
+      mkdir genome; cd genome; ln -s ../${reference}; cd ..
+      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} -nmasking
       cat ${nmaskPattern} > ${opref}_nmask_genome.fa
       """                                            
     }else{
@@ -470,7 +472,8 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
       opref = params.maternal ? "${params.maternal}_${params.vcfRef}" : "${params.vcfRef}_${params.paternal}"
       // Maternal or Paternal vs REF
       """
-      SNPsplit_genome_preparation $opts_strain --reference_genome ${reference} --vcf_file ${vcf} -nmasking
+      mkdir genome; cd genome; ln -s ../${reference}; cd ..
+      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} -nmasking
       cat ${nmaskPattern} > ${opref}_nmask_genome.fa
       gunzip all*gz
       """
@@ -512,7 +515,7 @@ if ( params.aligner == 'star' && !params.starIndex ){
     strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
     """
     mkdir -p ${strainPrefix}_STAR_index
-    STAR --runMode genomeGenerate --runThreadN ${task.cpus} --genomeDir ${strainPrefix}_STAR_index --genomeFastaFiles $fasta
+    STAR --runMode genomeGenerate --limitGenomeGenerateRAM 33524399488 --runThreadN ${task.cpus} --genomeDir ${strainPrefix}_STAR_index --genomeFastaFiles $fasta
     """
   }
 }
