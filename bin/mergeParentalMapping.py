@@ -17,7 +17,6 @@ def argsParse():
     parser.add_argument("-o", "--output", help="Output file")
     parser.add_argument("-t", "--tag", help="Allele specific tag", default="XX")
     parser.add_argument("-c", "--comp", help="How to compare alignments (mapq, AS, NM)", default="AS")
-    parser.add_argument("-s", "--pairedEnd",  help="For paired-end data", action="store_true")
     parser.add_argument("--debug",  help="Activate debug mode", action="store_true")
 
     args = parser.parse_args()

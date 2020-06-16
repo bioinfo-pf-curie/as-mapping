@@ -800,9 +800,8 @@ process tagParentalBams {
   file("*.log") into parentalLog
 
   script:
-  opts = params.singleEnd ? "" : "--pairedEnd"
   """
-  mergeParentalMapping.py -p ${bams[0]} -m ${bams[1]} -o ${prefix}_parentalMerged.bam $opts
+  mergeParentalMapping.py -p ${bams[0]} -m ${bams[1]} -o ${prefix}_parentalMerged.bam
   mv mergeAlignReport.log ${prefix}_mergeAlignReport.log
   """
 }
