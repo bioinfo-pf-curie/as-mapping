@@ -119,6 +119,10 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
    exit 1, "The provided genome '${params.genome}' is not available in the genomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
+if (params.nmask && (!params.maternal || !params.paternal)){
+  exit 1, "N-mask mapping strategy requires both paternal (--paternal) and maternal (--maternal) genotypes."
+}
+
 // Reference index path configuration
 // Define these here - after the profiles are loaded with the genomes paths
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
@@ -362,6 +366,13 @@ if ( params.nmask ){
 }
 summary['Paternal Genome'] = params.paternal ?: params.vcfRef
 summary['Maternal Genome'] = params.maternal ?: params.vcfRef
+if(params.reverseStranded){
+summary['Stranded'] = 'reverse'
+}else if (params.forwardStranded){
+summary['Stranded'] = 'forward'
+}else{
+summary['Stranded'] = 'Unstranded'
+}
 summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
@@ -404,34 +415,28 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
     file("*_genome.fa") into chGenomeParentalFasta
 
     script:
-    //Dual Strain 
-    if (params.maternal && params.paternal){
-      opts_strain = "--strain ${params.paternal} --strain2 ${params.maternal}"
-      """
-      mkdir genome; cd genome; ln -s ../${reference}; cd ..
-      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} --no_nmasking
-      cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
-      cat ${params.maternal}_full_sequence/*.fa > ${params.maternal}_maternal_genome.fa
-      """
-    //Maternal vs REF
-    }else if (params.maternal && !params.paternal){
-      opts_strain = "--strain ${params.maternal}"
-      """
-      mkdir genome; cd genome; ln -s ../${reference}; cd ..
-      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} --no_nmasking
-      cat genome/*.fa > ${params.vcfRef}_paternal_genome.fa
-      cat ${params.maternal}_full_sequence/*.fa* > ${params.maternal}_maternal_genome.fa
-      """
-    //REF vs Paternal
-    }else if (!params.maternal && params.paternal){
-      opts_strain = "--strain ${params.paternal}"
-      """
-      mkdir genome; cd genome; ln -s ../${reference}; cd ..
-      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} --no_nmasking
-      cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa
-      cat genome/*.fa* > ${params.vcfRef}_maternal_genome.fa
-      """
+
+    if (params.maternal != params.vcfRef && params.paternal != params.vcfRef){
+      optsStrain = "--strain ${params.paternal} --strain2 ${params.maternal}"
+    }else if (params.maternal != params.vcfRef){
+      optsStrain = "--strain ${params.maternal}"
+    }else if (params.paternal != params.vcfRef){
+      optsStrain = "--strain ${params.paternal}"
     }
+    
+    if (params.paternal){
+      concatPat = params.paternal == params.vcfRef ? "cat genome/*.fa > ${params.vcfRef}_paternal_genome.fa" : "cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa"
+    }
+    if (params.maternal){
+      concatMat = params.maternal == params.vcfRef ? "cat genome/*.fa > ${params.vcfRef}_maternal_genome.fa" : "cat ${params.maternal}_full_sequence/*.fa* > ${params.maternal}_maternal_genome.fa"
+    }
+
+    """
+    mkdir genome; cd genome; faidx -x ../${reference}; cd ..
+    SNPsplit_genome_preparation $optsStrain --reference_genome genome --vcf_file ${vcf} --no_nmasking
+    ${concatPat}
+    ${concatMat}
+    """
   }
 
   process prepareNmaskReferenceGenome {
@@ -456,28 +461,17 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
     file("all*.txt") into chSnp
 
     script:
-    if (params.maternal && params.paternal){
-      opts_strain = "--strain ${params.paternal} --strain2 ${params.maternal}"
-      nmaskPattern = "*dual_hybrid*_N-masked/*.fa"
-      opref = "${params.maternal}_${params.paternal}"
-      // Dual hybrid
-      """
-      mkdir genome; cd genome; ln -s ../${reference}; cd ..
-      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} -nmasking
-      cat ${nmaskPattern} > ${opref}_nmask_genome.fa
-      """                                            
-    }else{
-      opts_strain = params.maternal ? " --strain ${params.maternal}" : "--strain ${params.paternal}"
-      nmaskPattern = "*_N-masked/*.fa"
-      opref = params.maternal ? "${params.maternal}_${params.vcfRef}" : "${params.vcfRef}_${params.paternal}"
-      // Maternal or Paternal vs REF
-      """
-      mkdir genome; cd genome; ln -s ../${reference}; cd ..
-      SNPsplit_genome_preparation $opts_strain --reference_genome genome --vcf_file ${vcf} -nmasking
-      cat ${nmaskPattern} > ${opref}_nmask_genome.fa
-      gunzip all*gz
-      """
-    }
+    optsStrain = params.maternal && params.paternal ? "--strain ${params.paternal} --strain2 ${params.maternal}" : params.maternal ? "--strain ${params.maternal}" : "--strain ${params.paternal}"
+    nmaskPattern = params.maternal && params.paternal ? "*dual_hybrid*_N-masked/*.fa" : "*_N-masked/*.fa"
+    opref = params.maternal && params.paternal ? "${params.maternal}_${params.paternal}" : params.maternal ? "${params.maternal}_${params.vcfRef}" : "${params.vcfRef}_${params.paternal}"
+    cmdGzip = params.maternal && params.paternal ? "" : "gunzip all*gz"
+
+    """
+    mkdir genome; cd genome; faidx -x ../${reference}; cd ..
+    SNPsplit_genome_preparation $optsStrain --reference_genome genome --vcf_file ${vcf} -nmasking
+    cat ${nmaskPattern} > ${opref}_nmask_genome.fa
+    ${cmdGzip}
+    """                                            
   }
 
   if (params.nmask){
@@ -801,7 +795,7 @@ process tagParentalBams {
 
   script:
   """
-  mergeParentalMapping.py -p ${bams[0]} -m ${bams[1]} -o ${prefix}_parentalMerged.bam
+  mergeParentalMapping.py -m ${bams[1]} -p ${bams[0]} -o ${prefix}_parentalMerged.bam
   mv mergeAlignReport.log ${prefix}_mergeAlignReport.log
   """
 }
