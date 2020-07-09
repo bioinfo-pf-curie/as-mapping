@@ -166,6 +166,10 @@ def compareBams(bam1, bam2, obam, asTag="XX", score="AS", debug=False):
     g2Aln=[]
 
     with pysam.Samfile(bam1, "rb") as hg1,  pysam.Samfile(bam1, "rb") as hg1Mm, pysam.Samfile(bam2, "rb") as hg2, pysam.Samfile(bam2, "rb") as hg2Mm:
+        if hg1.header['SQ'] != hg2.header['SQ']:
+            print("SQ header from bam files look different. Stop")
+            sys.exit(1)
+
         out = pysam.AlignmentFile(obam, "wb", template=hg1)
         for g1, g1Mm, g2, g2Mm in zip(hg1.fetch(until_eof=True), hg1Mm.fetch(until_eof=True), hg2.fetch(until_eof=True), hg2Mm.fetch(until_eof=True)):
 
@@ -237,6 +241,7 @@ def compareBams(bam1, bam2, obam, asTag="XX", score="AS", debug=False):
                     if flagR2 == "UN":
                         bestAlignR2.clear()
 
+                    flag = flagR1 +"/"+ flagR2
                     finalAln = bestAlignR1 + bestAlignR2
                 else:
                     bestAlign = compareAlignments(g1Aln, g2Aln, asTag=asTag, score=score, debug=debug)
