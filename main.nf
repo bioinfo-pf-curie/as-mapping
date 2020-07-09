@@ -1,4 +1,4 @@
-!/usr/bin/env nextflow
+#!/usr/bin/env nextflow
 
 /*
 Copyright Institut Curie 2019
@@ -73,10 +73,12 @@ def helpMessage() {
       --tophat2Index [file]         Path to TopHat2 index
 
     Analysis (RNA-seq)
+      --rnaseq                      Activate all RNA-seq options
       --useGtf                      Specify to use the GTF file for RNA-seq mapping
       --asratio                     Generate allele-specific ratio table per gene
 
     Analysis (ChIP-seq)
+      --chipseq                     Activate all ChIP-seq options
       --rmDups [bool]               Remove duplicates reads
       --bigwig                      Generate allele-specific genome-wide profile (.bigWig)
 
@@ -140,6 +142,17 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 // Stage config files
 chMultiqcConfig = Channel.fromPath(params.multiqc_config)
 chOutputDocs = Channel.fromPath("$baseDir/docs/output.md")
+
+// Options
+if (params.rnaseq){
+  params.useGtf = true
+  params.asratio = true
+}
+
+if (params.chipseq){
+  params.rmDups = true
+  params.bigwig = true
+}
 
 /*
  * CHANNELS
@@ -366,6 +379,7 @@ if ( params.nmask ){
 }
 summary['Paternal Genome'] = params.paternal ?: params.vcfRef
 summary['Maternal Genome'] = params.maternal ?: params.vcfRef
+summary['Mode'] = params.rnaseq ? "RNA-seq" : params.chipseq ? "ChIP-seq" : "None"
 if ( params.reverseStranded ){
   summary['Strandness'] = 'Reverse'
 }else if ( params.forwardStranded ){
