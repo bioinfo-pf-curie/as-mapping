@@ -93,6 +93,8 @@ def getAllelicStatus(set1, set2, score="AS", debug=False):
             m1pos.append(str(r.reference_name) + '_' + str(r.reference_start))
         for r in set2:
             m2pos.append(str(r.reference_name) + '_' + str(r.reference_start))
+        print(m1pos)
+        print(m2pos)
         if (m1pos == m2pos):
             flag="UA"
         else:
@@ -121,8 +123,8 @@ def compareAlignments(set1, set2, filterNonPrimary=True, asTag="XX", score="AS",
 
     ## Remove secondary alignments
     if filterNonPrimary:
-        g1 = [x for x in g1 if not x.is_secondary or not x.is_supplementary]
-        g2 = [x for x in g2 if not x.is_secondary or not x.is_supplementary]
+        g1 = [x for x in g1 if not x.is_secondary and not x.is_supplementary]
+        g2 = [x for x in g2 if not x.is_secondary and not x.is_supplementary]
 
     flag=getAllelicStatus(g1, g2, score=score, debug=debug)
     if flag == "G2":
@@ -217,13 +219,6 @@ def compareBams(bam1, bam2, obam, asTag="XX", score="AS", debug=False):
                 ## g1Mm/g2Mm are on the next read name
 
                 ## Compare two sets of alignments
-                if debug:
-                    print("[debug] ------------------------")
-                    for r in g1Aln: 
-                        print("[debug] G1:", r.query_name, r.reference_name, r.reference_start)
-                    for r in g2Aln:
-                        print("[debug] G2:", r.query_name, r.reference_name, r.reference_start)
-
                 if isPE:
                     counter_alignments['total'] += 1
                     g1PE = splitPE(g1Aln)
@@ -236,6 +231,20 @@ def compareBams(bam1, bam2, obam, asTag="XX", score="AS", debug=False):
                     flagR2 = bestAlignR2[0].get_tag(asTag)
                     counter_alignments=updateStats(counter_alignments, flagR2)
 
+                    if debug:
+                        print("[debug] ------------------------")
+                        for r in g1PE[0]:
+                            print("[debug] R1 BAM1:", r.query_name, r.reference_name, r.reference_start)
+                        for r in g2PE[0]:
+                            print("[debug] R1 BAM2:", r.query_name, r.reference_name, r.reference_start)
+                        for r in g1PE[1]:
+                            print("[debug] R2 BAM1:", r.query_name, r.reference_name, r.reference_start)
+                        for r in g2PE[1]:
+                            print("[debug] R2 BAM2:", r.query_name, r.reference_name, r.reference_start)
+                        print("[debug] FLAG R1:", flagR1)
+                        print("[debug] FLAG R2:", flagR2)
+                        print("\n")                                                         
+
                     if flagR1 == "UN":
                         bestAlignR1.clear()
                     if flagR2 == "UN":
@@ -244,8 +253,17 @@ def compareBams(bam1, bam2, obam, asTag="XX", score="AS", debug=False):
                     flag = flagR1 +"/"+ flagR2
                     finalAln = bestAlignR1 + bestAlignR2
                 else:
-                    bestAlign = compareAlignments(g1Aln, g2Aln, asTag=asTag, score=score, debug=debug)
+                    bestAlign = compareAlignments(g1Aln, g2Aln, asTag=asTag, score=score, debug=debug) 
                     flag = bestAlign[0].get_tag(asTag)
+                    if debug:
+                        print("[debug] ------------------------")
+                        for r in g1Aln:
+                            print("[debug] BAM1:", r.query_name, r.reference_name, r.reference_start)
+                        for r in g2Aln:
+                            print("[debug] BAM2:", r.query_name, r.reference_name, r.reference_start)
+                        print("[debug] FLAG:", flag)
+                        print("\n")
+
                     counter_alignments = updateStats(counter_alignments, flag)
                     finalAln = bestAlign
                     if flag == "UN":
@@ -254,9 +272,6 @@ def compareBams(bam1, bam2, obam, asTag="XX", score="AS", debug=False):
                 if finalAln is not None:
                     for r in finalAln:
                         out.write(r)
-                    if debug:
-                        print("[debug] FLAG:", flag)
-                        print("\n")
 
                 ## Drop list elements
                 g1Aln.clear()

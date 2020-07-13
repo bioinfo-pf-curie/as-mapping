@@ -63,8 +63,7 @@ def helpMessage() {
       --fasta                       Path to generic reference genome
       --vcf                         Path to vcf from Mouse Sanger Project
       --gtf                         Gene annotation (.gtf)
-      --blacklist [file]            Path to black list regions (.bed).
-
+ 
     Mapping
       --aligner [str]               Tool for read alignments ['star', 'bowtie2', 'hisat2', 'tophat2']. Default: 'star'
       --starIndex [file]            Path to STAR index
@@ -81,6 +80,7 @@ def helpMessage() {
       --chipseq                     Activate all ChIP-seq options
       --rmDups [bool]               Remove duplicates reads
       --bigwig                      Generate allele-specific genome-wide profile (.bigWig)
+      --blacklist [file]            Path to black list regions (.bed)
 
     Other options:
       --metadata [file]             Add metadata file for multiQC report
@@ -142,17 +142,6 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 // Stage config files
 chMultiqcConfig = Channel.fromPath(params.multiqc_config)
 chOutputDocs = Channel.fromPath("$baseDir/docs/output.md")
-
-// Options
-if (params.rnaseq){
-  params.useGtf = true
-  params.asratio = true
-}
-
-if (params.chipseq){
-  params.rmDups = true
-  params.bigwig = true
-}
 
 /*
  * CHANNELS
@@ -331,11 +320,6 @@ if (!params.maternal && !params.paternal){
   exit 1, "Error: specify at least one genotype using --maternal or --paternal"
 } 
 
-if (params.refOnly){
-  params.saveReference = true
-} 
-
-
 // Header log info
 if ("${workflow.manifest.version}" =~ /dev/ ){
    dev_mess = file("$baseDir/assets/dev_message.txt")
@@ -387,7 +371,7 @@ if ( params.reverseStranded ){
 }else{
   summary['Strandness'] = 'Unstranded'
 }
-summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
+summary['Save Reference'] = params.saveReference ? 'Yes' : params.refOnly ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
 summary['Max Time']       = params.max_time
@@ -412,7 +396,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
     publishDir "${params.outdir}/reference_genome", mode: 'copy',
         saveAs: {filename ->
                  if (filename.indexOf("_report.txt") > 0) "logs/$filename"
-                 else if (params.saveReference) filename
+                 else if (params.saveReference || params.refOnly) filename
                  else null
                 }
     when:
@@ -456,7 +440,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
     publishDir "${params.outdir}/reference_genome", mode: 'copy',
         saveAs: {filename ->
                  if (filename.indexOf("_report.txt") > 0) "logs/$filename"
-                 else if (params.saveReference) filename
+                 else if (params.saveReference || params.refOnly) filename
                  else null
                 }
 
@@ -518,7 +502,7 @@ if ( params.aligner == 'star' && !params.starIndex ){
   process makeStarIndex {
     label 'process_high'
     publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
-       saveAs: {filename -> if (params.saveReference) filename else null }
+       saveAs: {filename -> if (params.saveReference || params.refOnly) filename else null }
 
     input:
     file(fasta) from genomeFastaStar.flatten()
@@ -539,7 +523,7 @@ if ( (params.aligner == "bowtie2" || params.aligner == "tophat2") && !params.bow
   process makeBowtie2Index {
     label 'process_low'
     publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
-       saveAs: {filename -> if (params.saveReference) filename else null }
+       saveAs: {filename -> if (params.saveReference || params.refOnly) filename else null }
 
     input:
     file(fasta) from genomeFastaBowtie2.flatten()
@@ -561,7 +545,7 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
   process makeHisat2Splicesites {
     label 'process_low'
     publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
-       saveAs: {filename -> if (params.saveReference) filename else null }
+       saveAs: {filename -> if (params.saveReference || params.refOnly) filename else null }
 
     input:
     file gtf from gtfHisat2Splicesites.collect()
@@ -578,7 +562,7 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
   process makeHisat2Index {
     label 'process_extra'
     publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
-         saveAs: {filename -> if (params.saveReference) filename else null }
+         saveAs: {filename -> if (params.saveReference || params.refOnly) filename else null }
 
     input:
     file fasta from genomeFastaHisat2.flatten()
@@ -624,7 +608,7 @@ if ( params.aligner == 'star' && !params.refOnly ){
     file "*Log.final.out" into starLogs
 
     script:
-    def gtfOpts = params.gtf && params.useGtf ? "--sjdbGTFfile $gtf" : ''
+    def gtfOpts = params.gtf && (params.useGtf || params.rnaseq) ? "--sjdbGTFfile $gtf" : ''
     def mandatoryOpts = "--alignEndsType EndToEnd --outSAMattributes NH HI NM AS MD --outSAMtype BAM Unsorted --outSAMunmapped Within"
     def genomeBase = index.baseName - ~/_STAR_index$/
     """
@@ -636,7 +620,7 @@ if ( params.aligner == 'star' && !params.refOnly ){
        --runMode alignReads \\
        --readFilesCommand zcat \\
        --runDirPerm All_RWX \\
-       --outTmpDir /local/scratch/rnaseq_\$(date +%d%s%S%N) \\
+       --outTmpDir /local/scratch/asmap_\$(date +%d%s%S%N) \\
        --outFileNamePrefix ${prefix}_${genomeBase}  \\
        --outSAMattrRGline ID:$prefix SM:$prefix LB:Illumina PL:Illumina
 
@@ -663,6 +647,7 @@ if ( params.aligner == 'bowtie2'  && !params.refOnly){
 
     output:
     set val(prefix), file("*.bam") into bowtie2Bam
+    file("*.log") into bowtie2Log
 
     script:
     idxDir = file(index.toRealPath())
@@ -676,7 +661,7 @@ if ( params.aligner == 'bowtie2'  && !params.refOnly){
             --rg-id BMG --rg SM:${prefix} \\
             -p ${task.cpus} \\
             -x ${index}/${genomeBase} \\
-            ${inCmd} | samtools view -bS - > ${prefix}_${genomeBase}.bam
+            ${inCmd} 2> ${prefix}_${genomeBase}_bowtie2.log | samtools view -bS - > ${prefix}_${genomeBase}.bam
     """
   }
 }
@@ -717,6 +702,7 @@ if(params.aligner == 'tophat2' && !params.refOnly){
     def sample = "--rg-id ${prefix} --rg-sample ${prefix} --rg-library Illumina --rg-platform Illumina --rg-platform-unit ${prefix}"
     """
     mkdir -p ${out}
+    export PATH=/bioinfo/local/build/Centos/python/python-2.7.13/bin/:/bioinfo/local/build/Centos/tophat/tophat_2.1.1/bin/:/bioinfo/local/build/Centos/bowtie2/bowtie2-2.2.9/:$PATH
     tophat2 -p ${task.cpus} \\
              ${sample} \\
              --GTF $gtf \\
@@ -779,15 +765,20 @@ if ( params.aligner == 'hisat2' && !params.refOnly){
 if (params.refOnly){
   chNmaskBams = Channel.empty()
   chBams = Channel.empty()
+  chMappingMqc = Channel.empty()
 }else{
   if (params.aligner == 'star'){
     starBam.into{chNmaskBams; chBams}
+    chMappingMqc = starLogs
   }else if (params.aligner == 'bowtie2'){
     bowtie2Bam.into{chNmaskBams; chBams}
+    chMappingMqc = bowtie2Logs
   }else if (params.aligner == 'hisat2'){
     hisat2Bam.into{chNmaskBams; chBams}
+    chMappingMqc = hisat2Logs
   }else if (params.aligner == 'tophat2'){
     tophat2Bam.into{chNmaskBams; chBams}
+    chMappingMqc = tophat2Logs
   }
 }
 
@@ -812,7 +803,7 @@ process tagParentalBams {
 
   output:
   set val(prefix), file("${prefix}_parentalMerged.bam") into chTagParentalBams
-  file("*.log") into parentalLog
+  file("*.log") into tagParentalLog
 
   script:
   pbam = bams[0] =~ params.paternal ? bams[0] : bams[1]
@@ -842,7 +833,7 @@ process tagNmaskBams {
 
   output:
   set val(prefix), file("*allele_flagged.bam") into chTagNmaskBams
-  file("*.txt") into tagLog
+  file("*report.txt") into tagNmaskLog
 
   script:
   opts = params.singleEnd ? "" : "--paired --singletons"
@@ -862,7 +853,7 @@ if (params.nmask){
  * BAM filering
  */
 
-process markDuplicates{
+process rmDuplicates{
   tag "${prefix}"
   label 'process_medium'
   publishDir path: "${params.outdir}/mapping", mode: 'copy',
@@ -872,7 +863,7 @@ process markDuplicates{
              else null}
 
   when:
-  params.rmDups
+  params.rmDups || params.chipseq
 
   input:
   set val(prefix), file(bams) from chTagBamsPicard
@@ -900,10 +891,11 @@ process markDuplicates{
   """
 }
 
-if (params.rmDups){
+if (params.rmDups || params.chipseq){
   chMarkedBams.into{chFiltBams; chFiltBamsSplit}
 }else{
   chTagBams.into{chFiltBams; chFiltBamsSplit}
+  chMarkedPicstats = Channel.empty()
 }
 
 
@@ -923,6 +915,7 @@ process splitTaggedBam {
 
   output:
   set val(prefix), file("*genome1.bam"), file("*genome2.bam") into genomeBams
+  file("*sort.txt") into splitLogs 
 
   script:
   opts = params.singleEnd ? "" : "--paired --singletons"
@@ -944,7 +937,7 @@ process geneASratio {
   publishDir "${params.outdir}/asratio", mode: 'copy',
 
   when:
-  params.asratio
+  params.asratio || params.rnaseq
 
   input:
   set val(prefix), file(bam1), file(bam2), file(bamTag) from chBamCount
@@ -981,7 +974,7 @@ process bigWig {
   publishDir "${params.outdir}/bigWig", mode: "copy"
 
   when:
-  params.bigwig
+  params.bigwig || params.chipseq
 
   input:
   set val(prefix), file(bam1), file(bam2), file(bamTag) from chBamWig
@@ -1034,7 +1027,7 @@ process get_software_versions {
   STAR --version &> v_star.txt
   bowtie2 --version &> v_bowtie2.txt
   picard MarkDuplicates --version &> v_markduplicates.txt || true
-  echo \$(plotFingerprint --version 2>&1) > v_deeptools.txt || true
+  echo \$(bamCoverage --version 2>&1) > v_deeptools.txt || true
   featureCounts -v &> v_featurecounts.txt
   samtools --version &> v_samtools.txt
   multiqc --version &> v_multiqc.txt
@@ -1077,6 +1070,9 @@ process multiqc {
     file multiqc_config from chMultiqcConfig    
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
+    file ('mapping/*') from chMappingMqc.collect().ifEmpty([])
+    file ('mapping/*') from chMarkedPicstats.collect().ifEmpty([])
+    file ('snpsplit/*') from splitLogs.collect().ifEmpty([])    
 
     output:
     file splan
@@ -1085,7 +1081,7 @@ process multiqc {
 
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName + "_rnaseq_report" : "--filename rnaseq_report"
+    rfilename = custom_runName ? "--filename " + custom_runName + "_asmap_report" : "--filename asmap_report"
     metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
     splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
     isPE = params.singleEnd ? 0 : 1
@@ -1176,9 +1172,9 @@ workflow.onComplete {
 
     /*final logs*/
     if(workflow.success){
-        log.info "[rnaseq] Pipeline Complete"
+        log.info "[ASmapping] Pipeline Complete"
     }else{
-        log.info "[rnaseq] FAILED: $workflow.runName"
+        log.info "[ASmapping] FAILED: $workflow.runName"
         if( workflow.profile == 'test'){
             log.error "====================================================\n" +
                     "  WARNING! You are running with the profile 'test' only\n" +
