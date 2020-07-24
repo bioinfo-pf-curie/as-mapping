@@ -78,6 +78,7 @@ def helpMessage() {
 
     Analysis (ChIP-seq)
       --chipseq                     Activate all ChIP-seq options
+      --fragmentSize                Estimated fragment length used to extend single-end reads. Default: 0
       --rmDups [bool]               Remove duplicates reads
       --bigwig                      Generate allele-specific genome-wide profile (.bigWig)
       --blacklist [file]            Path to black list regions (.bed)
@@ -990,6 +991,11 @@ process bigWig {
   set val(prefix), file('*.bigwig') into chBigWig
 
   script:
+  if (params.singleEnd){
+    extend = params.fragmentSize > 0 ? "--extendReads ${params.fragmentSize}" : ""
+  }else{
+    extend = "--extendReads"
+  }    
   blacklistParams = params.blacklist ? "--blackListFileName ${BLbed}" : ""
   """
   nbreads=\$(samtools view -c ${bamTag})
@@ -998,16 +1004,18 @@ process bigWig {
   samtools sort -@ ${task.cpus} -T ${prefix} -o ${prefix}_genome1_sorted.bam ${bam1}
   samtools index ${prefix}_genome1_sorted.bam
   bamCoverage -b ${prefix}_genome1_sorted.bam \\
-              -o ${prefix}_genome1_rpkm.bigwig \\
+              -o ${prefix}_genome1_norm.bigwig \\
               -p ${task.cpus} \\
+	      ${extend} \\
               ${blacklistParams} \\
               --scaleFactor \$sf
 
   samtools sort -@ ${task.cpus} -T ${prefix} -o ${prefix}_genome2_sorted.bam ${bam2}
   samtools index ${prefix}_genome2_sorted.bam
   bamCoverage -b ${prefix}_genome2_sorted.bam \\
-              -o ${prefix}_genome2_rpkm.bigwig \\
+              -o ${prefix}_genome2_norm.bigwig \\
               -p ${task.cpus} \\
+	      ${extend} \\
               ${blacklistParams} \\
               --scaleFactor \$sf
   """
