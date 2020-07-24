@@ -29,34 +29,26 @@ custom_data:
               scale: false
               format: '{:.0f}'
               placement: 2000
+            Genotypes:
+              title: 'Genotpyes'
+              description: 'Paternal/Maternal'
+              scale: false
+              format: '{:.0f}'
+              placement: 3000
             Number_of_reads:
               title: 'Total Reads'
               scale: 'YlGnBu'
               format: '{:,.0f}'
               placement: 4000
-            Number_of_rRNA:
-              title: 'rRNA'
-              scale: 'RdYlGn-rev'
-              format: '{:,.0f}'
-              hidden: true
-              placement: 5000
-            Percent_of_rRNA:
-              title: 'rRNA (%)'
-              min: 0
-              max: 100
-              scale: 'RdYlGn-rev'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 6000
             Strandness:
               scale: false
-              placement: 3000
+              placement: 5000
             Number_of_aligned_reads:
               title: 'Aligned Reads'
               scale: 'RdYlGn'
               format: '{:,.0f}'
               hidden: true
-              placement: 7000
+              placement: 6000
             Percent_of_aligned_reads:
               title: 'Aligned Reads (%)'
               min: 0
@@ -64,112 +56,133 @@ custom_data:
               scale: 'RdYlGn'
               suffix: '%'
               format: '{:,.1f}'
+              placement: 7000
+            Number_paternal:
+              title: 'Paternal'
+              scale: 'RdYlGn'
+              format: '{:,.0f}'
+              hidden: true
               placement: 8000
-            Number_of_uniquely_aligned_reads:
-              title: 'Unique Reads'
+            Percent_paternal:
+              title: 'Paternal (%)'
+              min: 0
+              max: 100
               scale: 'RdYlGn'
-              format: '{:,.0f}'
-              hidden: true
+              suffix: '%'
+              format: '{:,.1f}'
               placement: 9000
-            Percent_uniquely_aligned_reads:
-              title: 'Unique Reads (%)'
-              min: 0
-              max: 100
-              scale: 'RdYlGn'
-              suffix: '%'
-              format: '{:,.1f}'
+            Number_maternal:
+              title: 'Maternal'
+              scale: 'RdYlGn-rev'
+              format: '{:,.0f}'
+              hidden: true
               placement: 10000
-            Number_of_multiple_aligned_reads:
-              title: 'Multiple Reads'
+            Percent_maternal:
+              title: 'Maternal (%)'
+              min: 0
+              max: 100
               scale: 'RdYlGn-rev'
-              format: '{:,.0f}'
-              hidden: true
+              suffix: '%'
+              format: '{:,.1f}'
               placement: 11000
-            Percent_multiple_aligned:
-              title: 'Multiple Reads (%)'
-              min: 0
-              max: 100
-              scale: 'RdYlGn-rev'
-              suffix: '%'
-              format: '{:,.1f}'
-              placement: 12000
-            Number_of_duplicates:
-              title: 'Duplicates'
+            Number_unassigned:
+              title: 'Unassigned'
               scale: 'RdYlGn-rev'
               format: '{:,.0f}'
               hidden: true
-              placement: 13000
-            Percent_duplicates:
-              title: 'Duplicates (%)'
+              placement: 12000
+            Percent_unassigned:
+              title: 'Unassigned (%)'
               min: 0
               max: 100
               scale: 'RdYlGn-rev'
               suffix: '%'
               format: '{:,.1f}'
+              placement: 13000
+            Number_conflicting:
+              title: 'Conflicting'
+              scale: 'RdYlGn-rev'
+              format: '{:,.0f}'
+              hidden: true
               placement: 14000
+            Percent_conflicting:
+              title: 'Conflicting (%)'
+              min: 0
+              max: 100
+              scale: 'RdYlGn-rev'
+              suffix: '%'
+              format: '{:,.1f}'
+              placement: 15000
 
-    gene_type:
+    assort:
        file_format: 'csv'
-       section_name: 'Expressed Genes'
-       description: 'with a TPM value > 1 are considered. The number of expressed genes per sample was splitted into the 5 most abundant classes following the known gene annotations.'
+       section_name: 'Allele-specific Sort'
+       description: 'Reads were assigned to maternal/paternal genomes according to their SNPs information'
        plot_type: 'bargraph'
        pconfig:
-            namespace: 'genetype'
-            id: 'genetype'
-            title: 'Expressed Genes'
-            ylab: 'Number of expressed genes (TPM>1)'
+            namespace: 'assort'
+            id: 'assort'
+            title: 'SNPsplit reads sorting'
+            ylab: 'Number of reads'
             scale: 'Pastel1'
 
-    gene_saturation:
-       file_format: 'tsv'
-       section_name: 'Gene-based saturation'
-       description: 'plot showing the number of detected genes for a given set of subsampling values.'
-       plot_type: 'linegraph'
+    asratio:
+       file_format: 'csv'
+       section_name: 'Gene Allelic Ratio'
+       description: 'Average gene allelic ratio per chromosome'
+       plot_type: 'heatmap'
        pconfig:
-            namespace: 'gene saturation'
-            id: 'genesaturation'
-            title: 'Gene-based Saturation'
-            ylab: 'Number of detected genes'
-            xlab: 'Number of reads (M)'
+            namespace: 'asratio'
+            id: 'asratio'
+            title: 'Mean Gene Allelic Ratio'
+            ylab: 'Mean Allelic Ratio'
+            xlab: 'Chromosomes'
+            borderWidth: 2
+            min: 0
+            max: 1
+            xcats_samples: False
+            #colstops: 'RdYlGn'
+            #tt_decimals: 2
+            #scale: 'Pastel2'
 
 sp:
    my_stats:
       fn: '*.stats'
-   gene_type:
-      fn: '*genetype.txt'
-   gene_saturation:
-      fn: '*gcurve.txt'
+   assort:
+      fn: '*sort.mqc'
+   asratio:
+      fn: '*heatmap.mqc'
 
 
 table_cond_formatting_rules:
-    Percent_of_rRNA:
+    Percent_paternal:
         pass:
-            - lt: 10
-        warn:
-            - gt: 10
-        fail:
             - gt: 20
-    Percent_of_aligned_reads:
-        pass:
-            - gt: 80
         warn:
-            - lt: 80
+            - lt: 20
         fail:
-            - lt: 50
-    Percent_duplicates:
+            - lt: 10
+    Percent_maternal:
         pass:
-            - lt: 35
+            - gt: 20
         warn:
-            - gt: 35
+            - lt: 20
         fail:
-            - gt: 50
+            - lt: 10
+    Percent_conflicting:
+        pass:
+            - lt: 5
+        warn:
+            - gt: 5
+        fail:
+            - gt: 10
 
 
 ################################
 ## Clean sample names
 
-extra_fn_clean_exts:
-    - 'gcurve.txt'
+#extra_fn_clean_exts:
+#    - 'gcurve.txt'
 
 ###############################
 ## Modules 
@@ -177,55 +190,12 @@ extra_fn_clean_exts:
 module_order:
   - fastqc
   - bowtie2:
-      name: 'rRNA Mapping'
-      info: 'This section reports the fraction of reads aligned on ribosomal RNAs.'
-      target: ''
       path_filters:
-        - '*.log'
+        - '*bowtie2.log'
   - star
   - hisat2
   - tophat
-  - rseqc
   - featureCounts
-  - HTSeq
-  - preseq:
-     name: 'Sequencing Complexity'
-     info: 'estimates the complexity of a library, showing how many additional unique reads are sequenced for increasing total read count. A shallow curve indicates complexity saturation. The dashed line shows a perfectly complex library where total reads = unique reads. The presented graph shows extrapolated curves up to 200M sequencing reads.'
-
-
-custom_plot_config:
-   bowtie1_alignment:
-     reads_aligned:
-       color: '#e41a1c'
-     multimapped:
-       color: '#ffffb3'
-     not_aligned:
-       color: '#1f78b4'
-
-   rseqc_read_distribution_plot:
-     cds_exons_tag_count:
-        color: '#8dd3c7'
-     5_utr_exons_tag_count:
-        color: '#ffffb3'
-     3_utr_exons_tag_count:
-        color: '#bebada'
-     introns_tag_count:
-        color: '#fb8072'
-     tss_up_1kb_tag_count:
-        color: '#80b1d3'
-     tss_up_5kb_tag_count:
-        color: '#fdb462'
-     tss_up_10kb_tag_count:
-        color: '#b3dde69'
-     tes_down_1kb_tag_count:
-        color: '#fccde5'
-     tes_down_5kb_tag_count:
-        color: '#d9d9d9'
-     tes_down_10kb_tag_count:
-        color: '#bc80bd'
-     other_intergenic_tag_count:
-        color: '#ccebc5'
-
 
 #############################
 ## Display
@@ -233,26 +203,13 @@ custom_plot_config:
 report_section_order:
   stats:
     order: 1
-  gene_saturation:
-    order: -400
-  gene_type:
+  assort:
     order: -500
-  DupRadar:
-    order: -600 
-  sample-pca:
-    order: -800
-  sample-correlation:
-    order: -900
+  asratio:
+    order: -600
   software_versions:
     order: -1000
   summary:
     order: -1100
-
-table_columns_visible:
-    FastQC:
-        percent_duplicates: False
-
-preseq:
-   notrim: true
 
 plots_force_interactive: True

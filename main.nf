@@ -521,7 +521,7 @@ if ( params.aligner == 'star' && !params.starIndex ){
 
 if ( (params.aligner == "bowtie2" || params.aligner == "tophat2") && !params.bowtie2Index ){
   process makeBowtie2Index {
-    label 'process_low'
+    label 'process_medium'
     publishDir "${params.outdir}/reference_genome/indexes", mode: 'copy',
        saveAs: {filename -> if (params.saveReference || params.refOnly) filename else null }
 
@@ -593,7 +593,7 @@ if ( params.aligner == 'star' && !params.refOnly ){
   process star {
     tag "$prefix"
     label 'process_high'
-    publishDir "${params.outdir}/mapping", mode: 'copy',
+    publishDir "${params.outdir}/alignment", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf(".bam") == -1) "logs/$filename"
             else filename}
@@ -636,7 +636,7 @@ if ( params.aligner == 'bowtie2'  && !params.refOnly){
   process bowtie2 {
     tag "$prefix"
     label 'process_medium'
-    publishDir "${params.outdir}/mapping", mode: 'copy',
+    publishDir "${params.outdir}/alignment", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf(".bam") == -1) "logs/$filename"
             else filename}
@@ -672,7 +672,7 @@ if(params.aligner == 'tophat2' && !params.refOnly){
   process tophat2 {
     tag "$prefix"
     label 'process_high'
-    publishDir "${params.outdir}/mapping", mode: 'copy',
+    publishDir "${params.outdir}/alignment", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf(".align_summary.txt") > 0) "logs/$filename"
             else filename
@@ -723,7 +723,7 @@ if ( params.aligner == 'hisat2' && !params.refOnly){
   process hisat2 {
     tag "$prefix"
     label 'process_high'
-    publishDir "${params.outdir}/mapping", mode: 'copy',
+    publishDir "${params.outdir}/alignment", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
 	        else filename}
@@ -856,7 +856,7 @@ if (params.nmask){
 process rmDuplicates{
   tag "${prefix}"
   label 'process_medium'
-  publishDir path: "${params.outdir}/mapping", mode: 'copy',
+  publishDir path: "${params.outdir}/alignment", mode: 'copy',
     saveAs: {filename ->
              if (!filename.endsWith(".bam") && !filename.endsWith(".bam.bai") ) "stats/$filename"
              else if ( (filename.endsWith(".bam") || (filename.endsWith(".bam.bai"))) ) filename
@@ -916,11 +916,14 @@ process splitTaggedBam {
   output:
   set val(prefix), file("*genome1.bam"), file("*genome2.bam") into genomeBams
   file("*sort.txt") into splitLogs 
+  file("*sort.mqc") into splitMqc 
 
   script:
   opts = params.singleEnd ? "" : "--paired --singletons"
   """
   tag2sort ${opts} ${asBam}
+  snpsplit2mqc.sh *sort.txt > ${prefix}_sort.mqc
+
   """
 }
 
@@ -946,9 +949,10 @@ process geneASratio {
   output:
   file("*count.txt") into asCounts
   file("*allelicRatio.txt") into asRatio
+  file("*average.mqc") into asRatioMqc
 
   script:
-  opts=params.singleEnd ? "" : "-C -p -P"
+  opts=params.singleEnd ? "" : "-p"
   strandness = "-s 0"
   if (params.forwardStranded){
       strandness = "-s 1"
@@ -960,6 +964,8 @@ process geneASratio {
   awk -F '\\t' 'BEGIN{OFS="\t"; print "Gene", "Genome1", "Genome2", "ASratio", "allReads"}{\
       if(\$1!~/^#/ && \$1!="Geneid"){if(\$7+\$8>0){as=\$7/(\$7+\$8)} else{as="NA"};\
       print \$1,\$7,\$8,as,\$9}}' ${prefix}_count.txt >  ${prefix}_allelicRatio.txt
+  awk -F'\\t' '(NR>2 && (\$7+\$8)>0){n=split(\$2,chrom,";");as=\$7/(\$7+\$8);mr[chrom[1]]+=as;cr[chrom[1]]+=1}\
+      END{for(x in mr){print x","mr[x]/cr[x]}}' ${prefix}_count.txt | sort -k1,1V >  ${prefix}_average.mqc
   """
 }
 
@@ -1070,9 +1076,10 @@ process multiqc {
     file multiqc_config from chMultiqcConfig    
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
-    file ('mapping/*') from chMappingMqc.collect().ifEmpty([])
-    file ('mapping/*') from chMarkedPicstats.collect().ifEmpty([])
-    file ('snpsplit/*') from splitLogs.collect().ifEmpty([])    
+    file ('alignment/*') from chMappingMqc.collect().ifEmpty([])
+    file ('alignment/*') from chMarkedPicstats.collect().ifEmpty([])
+    file ('snpsplit/*') from splitMqc.collect().ifEmpty([])    
+    file ('asratio/*') from asRatioMqc.collect().ifEmpty([])
 
     output:
     file splan
@@ -1082,12 +1089,12 @@ process multiqc {
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName + "_asmap_report" : "--filename asmap_report"
-    metadata_opts = params.metadata ? "--metadata ${metadata}" : ""
-    splan_opts = params.samplePlan ? "--splan ${params.samplePlan}" : ""
-    isPE = params.singleEnd ? 0 : 1
-     
+    metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
+    nmaskOpt = params.nmask ? "-n" : ""
+    strandness = params.forwardStranded ? 'forward' : params.reverseStranded ? 'reverse' : 'unstranded'
     """
-    mqc_header.py --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadata_opts} ${splan_opts} > multiqc-config-header.yaml
+    stats2multiqc -s ${splan} -a ${params.aligner} -d ${strandness} -p ${params.paternal} -m ${params.maternal} ${nmaskOpt}
+    mqc_header.py --splan ${splan} --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} > multiqc-config-header.yaml
     multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml
     """    
 }
