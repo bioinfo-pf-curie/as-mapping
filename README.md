@@ -8,8 +8,6 @@
 [![Singularity Container available](https://img.shields.io/badge/singularity-available-7E4C74.svg)](https://singularity.lbl.gov/)
 <!--[![Docker Container available](https://img.shields.io/badge/docker-available-003399.svg)](https://www.docker.com/)-->
 
-## !! UNDER CONSTRUCTION !! 
-
 ### Introduction
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. 
@@ -23,8 +21,8 @@ This pipeline was mainly build to work on Mouse sequencing data, in conjunction 
 ### Pipline summary
 
 1. Build allele sepcific (parental or nmask) reference genome ([`SNPsplit`](https://github.com/FelixKrueger/SNPsplit))
-2. Build allele specific (parental or nmask) indexes for reads alignment ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / ['bowtie2'](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)) 
-3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / ['bowtie2'](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml))
+2. Build allele specific (parental or nmask) indexes for reads alignment ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / [`bowtie2`](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)) 
+3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / [`bowtie2`](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml))
 4. Mark duplicates ([`Picard`](https://broadinstitute.github.io/picard/))
 5. Split allele specific mapped reads ([`SNPsplit`](https://github.com/FelixKrueger/SNPsplit))
 6. Compute alelle specific gene counts ([`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/))
@@ -220,7 +218,7 @@ Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
 
 #### Credits
 
-This pipeline has been written by the bioinformatics platform of the Institut Curie (P. La Rosa, N. Servant)
+This pipeline has been written by the bioinformatics platform of the Institut Curie (N. Servant)
 
 #### Contacts
 
