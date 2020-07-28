@@ -22,7 +22,7 @@ This pipeline was mainly build to work on Mouse sequencing data, in conjunction 
 
 1. Build allele sepcific (parental or nmask) reference genome ([`SNPsplit`](https://github.com/FelixKrueger/SNPsplit))
 2. Build allele specific (parental or nmask) indexes for reads alignment ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / ['bowtie2'](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)) 
-3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / ['bowtie2'](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml))
+3. Align reads on reference genome ([`STAR`](https://github.com/alexdobin/STAR) / [`tophat2`](http://ccb.jhu.edu/software/tophat/index.shtml) / [`hisat2`](http://ccb.jhu.edu/software/hisat2/index.shtml) / [`bowtie2`](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml))
 4. Mark duplicates ([`Picard`](https://broadinstitute.github.io/picard/))
 5. Split allele specific mapped reads ([`SNPsplit`](https://github.com/FelixKrueger/SNPsplit))
 6. Compute alelle specific gene counts ([`featureCounts`](http://bioinf.wehi.edu.au/featureCounts/))
