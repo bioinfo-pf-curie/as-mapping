@@ -218,7 +218,7 @@ Sample ID | Sample Name | Path R1 .fastq file | [Path R2 .fastq file]
 
 #### Credits
 
-This pipeline has been written by the bioinformatics platform of the Institut Curie (P. La Rosa, N. Servant)
+This pipeline has been written by the bioinformatics platform of the Institut Curie (N. Servant)
 
 #### Contacts
 
