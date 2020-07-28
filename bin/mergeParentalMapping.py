@@ -144,7 +144,7 @@ def updateStats(counter_alignments, flag):
     elif flag == 'CF':
         counter_alignments['CF'] += 1
     elif flag == 'UN':
-        counter_alignments['unmapped'] += 1                                                                                                                                                  
+        counter_alignments['unmapped'] += 1
 
     return(counter_alignments)
 
@@ -324,6 +324,7 @@ def compareBams(bam1, bam2, obam, asTag="XX", score="AS", debug=False):
     logName = 'mergeAlignReport.log'
     with open(logName, 'w') as report:
         localtime = time.asctime( time.localtime(time.time()) )
+        counter_alignments['mapped'] = counter_alignments['G1'] + counter_alignments['G2'] + counter_alignments['UA'] + counter_alignments['CF']
 
         report.write("------------------------------------------------ \n")
         report.write("| mergeAlign report - " + localtime + " | \n")
@@ -348,6 +349,8 @@ def compareBams(bam1, bam2, obam, asTag="XX", score="AS", debug=False):
                      " (" + str(round(float(counter_alignments["UA"])/counter_alignments["total"]*100,3)) + "%)\n")
         report.write("Reads with conflicting allelic information (CF):\t" + str(counter_alignments["CF"]) + \
                      " (" + str(round(float(counter_alignments["CF"])/counter_alignments["total"]*100,3)) + "%)\n")
+        report.write("Reads mapped:                                    \t" + str(counter_alignments["mapped"]) + \
+                     " (" + str(round(float(counter_alignments["mapped"])/counter_alignments["total"]*100,3)) + "%)\n")
         report.write("Reads unmapped:                                 \t" + str(counter_alignments["unmapped"]) + \
                      " (" + str(round(float(counter_alignments["unmapped"])/counter_alignments["total"]*100,3)) + "%)\n")
         report.write("Total number of reads:                          \t" + str(counter_alignments["total"]) + \

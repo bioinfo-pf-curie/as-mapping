@@ -845,8 +845,10 @@ process tagNmaskBams {
 
 if (params.nmask){
   chTagNmaskBams.into{chTagBams ; chTagBamsPicard}
+  tagNmaskLog.set{chTagLog}
 }else{
   chTagParentalBams.into{chTagBams ; chTagBamsPicard}
+  tagParentalLog.set{chTagLog}
 }
 
 
@@ -1086,6 +1088,7 @@ process multiqc {
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
     file ('alignment/*') from chMappingMqc.collect().ifEmpty([])
     file ('alignment/*') from chMarkedPicstats.collect().ifEmpty([])
+    file ('tag/*') from chTagLog.collect().ifEmpty([])
     file ('snpsplit/*') from splitMqc.collect().ifEmpty([])    
     file ('asratio/*') from asRatioMqc.collect().ifEmpty([])
 
@@ -1101,8 +1104,8 @@ process multiqc {
     nmaskOpt = params.nmask ? "-n" : ""
     strandness = params.forwardStranded ? 'forward' : params.reverseStranded ? 'reverse' : 'unstranded'
     """
-    stats2multiqc -s ${splan} -a ${params.aligner} -d ${strandness} -p ${params.paternal} -m ${params.maternal} ${nmaskOpt}
-    mqc_header.py --splan ${splan} --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadataOpts} ${splanOpts} > multiqc-config-header.yaml
+    stats2multiqc.sh -s ${splan} -a ${params.aligner} -d ${strandness} -p ${params.paternal} -m ${params.maternal} ${nmaskOpt}
+    mqc_header.py --splan ${splan} --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
     multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml
     """    
 }
