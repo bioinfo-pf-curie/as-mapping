@@ -63,6 +63,10 @@ def helpMessage() {
       --fasta                       Path to generic reference genome
       --vcf                         Path to vcf from Mouse Sanger Project
       --gtf                         Gene annotation (.gtf)
+
+    Trimming
+      --trimMinLen [str]            Minimum length of trimmed reads. Default: 10
+      --trimQuality                 Minimum quality for reads trimming. Default: 20
  
     Mapping
       --aligner [str]               Tool for read alignments ['star', 'bowtie2', 'hisat2', 'tophat2']. Default: 'star'
@@ -92,6 +96,8 @@ def helpMessage() {
 
     Skip options:
       --refOnly                     Prepare annotation only. All analysis steps are skipped
+      --skipFastqc                  Skip FastQC
+      --skipTrimming                Skip TrimGalore!
       --skipMultiqc                 Skip MultiQC
 
     =======================================================
@@ -242,13 +248,13 @@ if (!params.refOnly){
         .from(file("${params.samplePlan}"))
         .splitCsv(header: false)
         .map{ row -> [ row[0], [file(row[2])]] }
-        .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+        .into { rawReads }
     }else{
       Channel
         .from(file("${params.samplePlan}"))
         .splitCsv(header: false)
         .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-        .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+        .into { rawReads }
     }
     params.reads=false
   }
@@ -258,19 +264,19 @@ if (!params.refOnly){
         .from(params.readPaths)
         .map { row -> [ row[0], [file(row[1][0])]] }
         .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-        .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+        .into { rawReads }
     } else {
       Channel
         .from(params.readPaths)
         .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
         .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-        .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+        .into { rawReads }
     }
   } else {
     Channel
       .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
       .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-      .into { rawReadsStar; rawReadsHisat2; rawReadsBowtie2; rawReadsTophat2 }
+      .into { rawReads }
   }
 
 /*
@@ -372,6 +378,8 @@ if ( params.reverseStranded ){
 }else{
   summary['Strandness'] = 'Unstranded'
 }
+summary['rmDups'] = params.rmDups || params.chipseq ? 'Yes' : 'No'
+summary['asRatio'] = params.asratio || params.rnaseq ? 'Yes' : 'No'
 summary['Save Reference'] = params.saveReference ? 'Yes' : params.refOnly ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
@@ -454,7 +462,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
 
     output:
     file("*_report.txt") into chGenomeNmaskReport
-    file("*genome.fa") into chGenomeNmaskFasta
+    file("*nmask.fa") into chGenomeNmaskFasta
     file("all*.txt") into chSnp
 
     script:
@@ -475,7 +483,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
     """
     mkdir genome; cd genome; faidx -x ../${reference}; cd ..
     SNPsplit_genome_preparation $optsStrain --reference_genome genome --vcf_file ${vcf} -nmasking
-    cat ${nmaskPattern} > ${opref}_nmask_genome.fa
+    cat ${nmaskPattern} > ${opref}_nmask.fa
     gunzip all*gz
     """                                            
   }
@@ -584,6 +592,76 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
   }
 }
 
+/*
+ * TRIMMING
+ */
+
+process trimGalore {
+  tag "$name" 
+  publishDir "${params.outdir}/trimming", mode: 'copy',
+              saveAs: {filename -> filename.indexOf(".log") > 0 ? "logs/$filename" : "$filename"}
+  when:
+  !params.skipTrimming
+
+  input:
+  set val(name), file(reads) from rawReads
+
+  output:
+  set val(name), file("*fastq.gz") into readsFastqc, readsStar, readsBowtie2, readsHisat2, readsTophat2
+  set val(name), file("*trimming_report.txt") into trimResults
+
+  script:
+  prefix = reads[0].toString() - ~/(_1)?(_2)?(_R1)?(_R2)?(.R1)?(.R2)?(_val_1)?(_val_2)?(\.fq)?(\.fastq)?(\.gz)?$/
+  if (params.singleEnd) {
+    """
+    trim_galore --trim-n \
+                --quality ${params.trimQuality} \
+                --length ${params.trimMinlen} \
+                --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    mv ${prefix}_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
+    """
+
+  }else {
+    """
+    trim_galore --trim-n \
+                --quality ${params.trimQuality} \
+                --length ${params.trimMinLen} \
+                --paired --gzip $reads --basename ${prefix} --cores ${task.cpus}
+    mv ${prefix}_R1_val_1.fq.gz ${prefix}_trimmed_R1.fastq.gz
+    mv ${prefix}_R2_val_2.fq.gz ${prefix}_trimmed_R2.fastq.gz
+    """
+  }
+}
+
+if (params.skipTrimming){
+  rawReads.into{ readsFastqc, readsStar, readsBowtie2, readsHisat2, readsTophat2 }
+}
+
+
+/*
+ * FastQC
+ */
+
+process fastqc {
+    tag "$name (raw)"
+    publishDir "${params.outdir}/fastqc", mode: 'copy',
+    saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
+
+    when:
+    !params.skipFastqc
+
+    input:
+    set val(name), file(reads) from readsFastqc
+
+    output:
+    file "*_fastqc.{zip,html}" into fastqcResults
+
+    script:
+    """
+    fastqc -q $reads -t ${task.cpus}
+    """
+}
+
 
 /*
  * MAPPING
@@ -600,7 +678,7 @@ if ( params.aligner == 'star' && !params.refOnly ){
             else filename}
 
     input:
-    set val(prefix), file(reads) from rawReadsStar
+    set val(prefix), file(reads) from readsStar
     each index from starIdx
     file gtf from gtfStar.collect().ifEmpty([])
 
@@ -643,12 +721,12 @@ if ( params.aligner == 'bowtie2'  && !params.refOnly){
             else filename}
 
     input:
-    set val(prefix), file(reads) from rawReadsBowtie2
+    set val(prefix), file(reads) from readsBowtie2
     each file(index) from bowtie2Idx
 
     output:
     set val(prefix), file("*.bam") into bowtie2Bam
-    file("*.log") into bowtie2Log
+    file("*.log") into bowtie2Logs
 
     script:
     idxDir = file(index.toRealPath())
@@ -680,7 +758,7 @@ if(params.aligner == 'tophat2' && !params.refOnly){
         }
 
     input:
-    set val(prefix), file(reads) from rawReadsTophat2 
+    set val(prefix), file(reads) from readsTophat2 
     each file(index) from tophat2Idx
     file gtf from gtfTophat2.collect()
 
@@ -729,7 +807,7 @@ if ( params.aligner == 'hisat2' && !params.refOnly){
             if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
 	        else filename}
     input:
-    set val(prefix), file(reads) from rawReadsHisat2
+    set val(prefix), file(reads) from readsHisat2
     each file(index) from hisat2Idx
     file alignmentSplicesites from alignmentSplicesites.collect()
 
@@ -1086,6 +1164,7 @@ process multiqc {
     file multiqc_config from chMultiqcConfig    
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
+    file ('trimming/*') from trimResults.collect().ifEmpty([])
     file ('alignment/*') from chMappingMqc.collect().ifEmpty([])
     file ('alignment/*') from chMarkedPicstats.collect().ifEmpty([])
     file ('tag/*') from chTagLog.collect().ifEmpty([])
@@ -1102,9 +1181,10 @@ process multiqc {
     rfilename = custom_runName ? "--filename " + custom_runName + "_asmap_report" : "--filename asmap_report"
     metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
     nmaskOpt = params.nmask ? "-n" : ""
+    peOpt  = params.singleEnd ? "" : "-p"
     strandness = params.forwardStranded ? 'forward' : params.reverseStranded ? 'reverse' : 'unstranded'
     """
-    stats2multiqc.sh -s ${splan} -a ${params.aligner} -d ${strandness} -p ${params.paternal} -m ${params.maternal} ${nmaskOpt}
+    stats2multiqc.sh -s ${splan} -a ${params.aligner} -d ${strandness} -f ${params.paternal} -m ${params.maternal} ${nmaskOpt} ${peOpt}
     mqc_header.py --splan ${splan} --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
     multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml
     """    

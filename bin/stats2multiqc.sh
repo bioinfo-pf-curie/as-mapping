@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-function usage {                                                                                                                                                                                                echo -e "usage : stats2multiqc.sh -s SAMPLE_PLAN -a ALIGNER -d STRANDNESS -p PATERNAL -m MATERNAL [-n][-h]" 
+function usage {                                                                                                                                                                                                echo -e "usage : stats2multiqc.sh -s SAMPLE_PLAN -a ALIGNER -d STRANDNESS -f PATERNAL -m MATERNAL [-p][-n][-h]" 
     echo -e "Use option -h|--help for more information"
 }
 
@@ -15,22 +15,25 @@ function help {
     echo "   -s SAMPLE_PLAN"
     echo "   -a ALIGNER"
     echo "   -d STRANDNESS"
-    echo "   -p PATERNAL GENOTYPE"
+    echo "   -f PATERNAL GENOTYPE"
     echo "   -m MATERNAL GENOTYPE"
+    echo "   [-p] paired-end"
     echo "   [-n] N-mask"
     echo "   [-h]: help"
     exit;
 }
 
 nmask=0
-while getopts "s:a:d:p:m:nh" OPT
+is_pe=0
+while getopts "s:a:d:f:m:nph" OPT
 do
     case $OPT in
         s) splan=$OPTARG;;
         a) aligner=$OPTARG;;
         d) strandness=$OPTARG;;
-	p) paternal=$OPTARG;;
+	f) paternal=$OPTARG;;
 	m) maternal=$OPTARG;;
+	p) is_pe=1;;
 	n) nmask=1;;
         h) help ;;
         \?)
@@ -54,7 +57,7 @@ fi
 echo -e "Sample_id,Sample_name,Genotypes,Number_of_reads,Strandness,Number_of_aligned_reads,Percent_of_aligned_reads,Number_paternal,Percent_paternal,Number_maternal,Percent_maternal,Number_unassigned,Percent_unassigned,Number_conflicting,Percent_conflicting" > mq.stats
 
 if [ ${nmask} == "1" ]; then
-    genomeBase=${paternal}_${maternal}_nmask
+    genomeBase=${paternal}_${maternal}_nmask_genome
 else
     genomeBase=${paternal}_${maternal}
 fi
@@ -76,12 +79,14 @@ do
 	    n_reads=$(grep "Number of input reads" alignment/${sample}_${genomeBase}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
 	elif [ $aligner == "tophat2" ]; then
 	    n_reads=$(grep "Input" alignment/${sample}_${genomeBase}.align_summary.txt | uniq | cut -d: -f2 | sed -e 's/ //g')
-	elif [[ $aligner == "bowtie2" && $is_pe == "1" ]]; then
-	    n_reads=$(grep "Total pairs" alignment/${sample}_${genomeBase}_bowtie2.log | cut -d: -f2 | sed -e 's/ //g')
+	elif [ $aligner == "bowtie2" ]; then
+	    n_reads=$(grep "reads;" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+	elif [[ $aligner == "hisat2" && $is_pe == "1" ]]; then
+	    n_reads=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
 	elif [[ $aligner == "hisat2" && $is_pe == "0" ]]; then
-	    n_reads=$(grep "Total reads" alignment/${sample}_${genomeBase}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+	    n_reads=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
 	fi
-	
+
 	if [ $aligner == "tophat2" ]; then
 	    n_mapped=$(grep "Aligned pairs" alignment/${sample}_${genomeBase}.align_summary.txt | cut -d: -f 2 | sed -e 's/ //g')
 	    n_multi=$(grep -a2 "Aligned pairs" alignment/${sample}_${genomeBase}.align_summary.txt | grep "multiple" | awk -F" " '{print $3}')
@@ -95,18 +100,23 @@ do
 	    n_multi=$(grep ">1 time" alignment/${sample}_${genomeBase}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
 	    n_mapped=$(($n_unique + $n_multi))
 	elif [ $aligner == "bowtie2" ]; then
-	    n_unique=$(grep "exactly" mapping/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
-	    n_multi=$(grep ">1" mapping/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
-	    n_mapped=$(($nb_uniq_reads + $nb_mult_reads))
+	    if [[ $is_pe == "1" ]]; then
+		n_uniq=$(grep "concordantly exactly" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+		n_multi=$(grep "concordantly >1" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+	    else
+		n_uniq=$(grep "exactly" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+		n_multi=$(grep ">1" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+	    fi
+	    n_mapped=$(($n_uniq + $n_multi))
 	else
 	    n_mapped='NA'
 	fi
-    
+	
     ## Parental Mapping
     else
 	n_reads=$(grep "Total" tag/${sample}_mergeAlignReport.log | awk -F"\t" '{print $2}' | awk -F\( '{print $1}')
 	n_mapped=$(grep "Reads mapped:" tag/${sample}_mergeAlignReport.log | awk -F"\t" '{print $2}' | awk -F\( '{print $1}')
-	if [[ $(grep -c "Paired-end" tag/${sample}_mergeAlignReport.log) == "1" ]]; then
+	if [[ ${is_pe} == "1" ]]; then
 	    n_reads=$((n_reads/2))
 	    n_mapped=$((n_mapped/2))
 	fi
