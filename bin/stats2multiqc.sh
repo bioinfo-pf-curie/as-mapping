@@ -57,7 +57,7 @@ fi
 echo -e "Sample_id,Sample_name,Genotypes,Number_of_reads,Strandness,Number_of_aligned_reads,Percent_of_aligned_reads,Number_paternal,Percent_paternal,Number_maternal,Percent_maternal,Number_unassigned,Percent_unassigned,Number_conflicting,Percent_conflicting" > mq.stats
 
 if [ ${nmask} == "1" ]; then
-    genomeBase=${paternal}_${maternal}_nmask_genome
+    genomeBase=${paternal}_${maternal}_nmask
 else
     genomeBase=${paternal}_${maternal}
 fi
@@ -74,45 +74,49 @@ do
 
     ## N-mask mapping
     if [ ${nmask} == "1" ]; then
-    
-	if [ $aligner == "star" ]; then
-	    n_reads=$(grep "Number of input reads" alignment/${sample}_${genomeBase}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-	elif [ $aligner == "tophat2" ]; then
-	    n_reads=$(grep "Input" alignment/${sample}_${genomeBase}.align_summary.txt | uniq | cut -d: -f2 | sed -e 's/ //g')
-	elif [ $aligner == "bowtie2" ]; then
-	    n_reads=$(grep "reads;" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
-	elif [[ $aligner == "hisat2" && $is_pe == "1" ]]; then
-	    n_reads=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
-	elif [[ $aligner == "hisat2" && $is_pe == "0" ]]; then
-	    n_reads=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
-	fi
+	#if [ $aligner == "star" ]; then
+	#    n_reads=$(grep "Number of input reads" alignment/${sample}_${genomeBase}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	#elif [ $aligner == "tophat2" ]; then
+	#    n_reads=$(grep "Input" alignment/${sample}_${genomeBase}.align_summary.txt | uniq | cut -d: -f2 | sed -e 's/ //g')
+	#elif [ $aligner == "bowtie2" ]; then
+	#    n_reads=$(grep "reads;" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+	#elif [[ $aligner == "hisat2" && $is_pe == "1" ]]; then
+	#    n_reads=$(grep "Total pairs" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+	#elif [[ $aligner == "hisat2" && $is_pe == "0" ]]; then
+	#    n_reads=$(grep "Total reads" alignment/${sample}.hisat2_summary.txt | cut -d: -f2 | sed -e 's/ //g')
+	#fi
 
-	if [ $aligner == "tophat2" ]; then
-	    n_mapped=$(grep "Aligned pairs" alignment/${sample}_${genomeBase}.align_summary.txt | cut -d: -f 2 | sed -e 's/ //g')
-	    n_multi=$(grep -a2 "Aligned pairs" alignment/${sample}_${genomeBase}.align_summary.txt | grep "multiple" | awk -F" " '{print $3}')
-	    n_unique=$(($n_mapped - $n_multi))
-	elif [ $aligner == "star" ]; then
-	    n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}_${genomeBase}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-	    n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}_${genomeBase}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
-	    n_mapped=$(($n_unique + $n_multi))
-	elif [ $aligner == "hisat2" ]; then
-	    n_unique=$(grep " 1 time" alignment/${sample}_${genomeBase}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
-	    n_multi=$(grep ">1 time" alignment/${sample}_${genomeBase}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
-	    n_mapped=$(($n_unique + $n_multi))
-	elif [ $aligner == "bowtie2" ]; then
-	    if [[ $is_pe == "1" ]]; then
-		n_uniq=$(grep "concordantly exactly" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
-		n_multi=$(grep "concordantly >1" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
-	    else
-		n_uniq=$(grep "exactly" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
-		n_multi=$(grep ">1" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
-	    fi
-	    n_mapped=$(($n_uniq + $n_multi))
-	else
-	    n_mapped='NA'
-	fi
-	
-    ## Parental Mapping
+	#if [ $aligner == "tophat2" ]; then
+	#    n_mapped=$(grep "Aligned pairs" alignment/${sample}_${genomeBase}.align_summary.txt | cut -d: -f 2 | sed -e 's/ //g')
+	#    n_multi=$(grep -a2 "Aligned pairs" alignment/${sample}_${genomeBase}.align_summary.txt | grep "multiple" | awk -F" " '{print $3}')
+	#    n_unique=$(($n_mapped - $n_multi))
+	#elif [ $aligner == "star" ]; then
+	#    n_unique=$(grep "Uniquely mapped reads number" alignment/${sample}_${genomeBase}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	#    n_multi=$(grep "Number of reads mapped to multiple loci" alignment/${sample}_${genomeBase}Log.final.out | cut -d"|" -f 2 | sed -e 's/\t//g')
+	#    n_mapped=$(($n_unique + $n_multi))
+	#elif [ $aligner == "hisat2" ]; then
+	#    n_unique=$(grep " 1 time" alignment/${sample}_${genomeBase}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
+	#    n_multi=$(grep ">1 time" alignment/${sample}_${genomeBase}.hisat2_summary.txt | cut -d: -f 2 | sed -e 's/ //g' | awk -F"(" 'BEGIN{s=0}{s=s+$1}END{print s}')
+	#    n_mapped=$(($n_unique + $n_multi))
+	#elif [ $aligner == "bowtie2" ]; then
+	#    if [[ $is_pe == "1" ]]; then
+	#	n_uniq=$(grep "concordantly exactly" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+	#	n_multi=$(grep "concordantly >1" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+	#    else
+	#	n_uniq=$(grep "exactly" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+	#	n_multi=$(grep ">1" alignment/${sample}_${genomeBase}_bowtie2.log | awk '{print $1}')
+	#   fi
+	#   n_mapped=$(($n_uniq + $n_multi))
+	#else
+	#    n_mapped='NA'
+	#fi
+	n_reads=$(grep "total" flagstat/${sample}.flagstat | awk '{print $1}')
+	n_mapped=$(grep "mapped (" flagstat/${sample}.flagstat | awk '{print $1}')
+	if [[ ${is_pe} == "1" ]]; then
+            n_reads=$((n_reads/2))
+            n_mapped=$((n_mapped/2))
+        fi
+     ## Parental Mapping
     else
 	n_reads=$(grep "Total" tag/${sample}_mergeAlignReport.log | awk -F"\t" '{print $2}' | awk -F\( '{print $1}')
 	n_mapped=$(grep "Reads mapped:" tag/${sample}_mergeAlignReport.log | awk -F"\t" '{print $2}' | awk -F\( '{print $1}')
@@ -122,6 +126,14 @@ do
 	fi
     fi
 
+    ## Duplicates
+    if [ -e flagstat/${sample}_nodup.flagstat ]; then
+	n_mapped_nodup=$(grep "total" flagstat/${sample}_nodup.flagstat | awk '{print $1}')
+    else
+	n_mapped_nodup=${n_mapped}
+    fi
+
+
     ## AS
     n_un=$(grep "Unassigned" snpsplit/${sample}*sort.mqc | awk -F, '{print $2}' | sed -e 's/ //g')
     n_g1=$(grep "Genome 1" snpsplit/${sample}*sort.mqc | awk -F, '{print $2}' | sed -e 's/ //g')
@@ -130,12 +142,13 @@ do
 
     ## Calculate percentage
     p_mapped=$(echo "${n_mapped} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    p_un=$(echo "${n_un} ${n_mapped}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    p_g1=$(echo "${n_g1} ${n_mapped}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    p_g2=$(echo "${n_g2} ${n_mapped}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
-    p_conf=$(echo "${n_conf} ${n_mapped}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    p_mapped_nodup=$(echo "${n_mapped_nodup} ${n_reads}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    p_un=$(echo "${n_un} ${n_mapped_nodup}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    p_g1=$(echo "${n_g1} ${n_mapped_nodup}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    p_g2=$(echo "${n_g2} ${n_mapped_nodup}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
+    p_conf=$(echo "${n_conf} ${n_mapped_nodup}" | awk ' { printf "%.*f",2,$1*100/$2 } ')
 
-    echo -e ${sample},${sname},${paternal}"/"${maternal},${n_reads},${strandness},${n_mapped},${p_mapped},${n_g1},${p_g1},${n_g2},${p_g2},${n_un},${p_un},${n_conf},${p_conf} >> mq.stats
+    echo -e ${sample},${sname},${paternal}"/"${maternal},${n_reads},${strandness},${n_mapped_nodup},${p_mapped_nodup},${n_g1},${p_g1},${n_g2},${p_g2},${n_un},${p_un},${n_conf},${p_conf} >> mq.stats
 done
 
 

@@ -15,7 +15,7 @@ custom_data:
     my_stats:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: ' of sequenced data. Note that in the context of paired-end data, the number pairs are reported (as reads).'
+        description: ' of sequenced data. Note that in the context of paired-end data, the number of pairs are reported (as reads).'
         plot_type: 'table'
         pconfig:
             namespace: 'stats'
@@ -44,13 +44,15 @@ custom_data:
               scale: false
               placement: 5000
             Number_of_aligned_reads:
-              title: 'Aligned Reads'
+              title: 'Usable Reads'
+              description: 'Number of aligned reads (after duplicates removal if any)'
               scale: 'RdYlGn'
               format: '{:,.0f}'
               hidden: true
               placement: 6000
             Percent_of_aligned_reads:
-              title: 'Aligned Reads (%)'
+              title: 'Usable Reads (%)'
+	      description: 'Percent of aligned reads (after duplicates removal if any)'
               min: 0
               max: 100
               scale: 'RdYlGn'
@@ -195,6 +197,7 @@ module_order:
   - star
   - hisat2
   - tophat
+  - picard
   - featureCounts
 
 #############################

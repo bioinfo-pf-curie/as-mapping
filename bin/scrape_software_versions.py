@@ -6,6 +6,8 @@ import re
 regexes = {
     'Pipeline': ['v_main.txt', r"(\S+)"],
     'Nextflow': ['v_nextflow.txt', r"(\S+)"],
+    'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
+    'TrimGalore': ['v_trimgalore.txt', r"version (\S+)"],
     'Bowtie2': ['v_bowtie2.txt', r"version (\S+)"],
     'STAR': ['v_star.txt', r"(\S+)"],
     'HISAT2': ['v_hisat2.txt', r"version (\S+)"],
@@ -19,6 +21,8 @@ regexes = {
 results = OrderedDict()
 results['Pipeline'] = '<span style="color:#999999;\">N/A</span>'
 results['Nextflow'] = '<span style="color:#999999;\">N/A</span>'
+results['FastQC'] = '<span style="color:#999999;\">N/A</span>'
+results['TrimGalore'] = '<span style="color:#999999;\">N/A</span>'
 results['Bowtie2'] = '<span style="color:#999999;\">N/A</span>'
 results['STAR'] = False
 results['HISAT2'] = False

@@ -616,7 +616,7 @@ process trimGalore {
     """
     trim_galore --trim-n \
                 --quality ${params.trimQuality} \
-                --length ${params.trimMinlen} \
+                --length ${params.trimMinLen} \
                 --gzip $reads --basename ${prefix} --cores ${task.cpus}
     mv ${prefix}_trimmed.fq.gz ${prefix}_trimmed_R1.fastq.gz
     """
@@ -634,7 +634,7 @@ process trimGalore {
 }
 
 if (params.skipTrimming){
-  rawReads.into{ readsFastqc, readsStar, readsBowtie2, readsHisat2, readsTophat2 }
+  rawReads.into{ readsFastqc; readsStar; readsBowtie2; readsHisat2; readsTophat2 }
 }
 
 
@@ -847,19 +847,42 @@ if (params.refOnly){
   chMappingMqc = Channel.empty()
 }else{
   if (params.aligner == 'star'){
-    starBam.into{chNmaskBams; chBams}
+    starBam.into{chFlagStat; chNmaskBams; chBams}
     chMappingMqc = starLogs
   }else if (params.aligner == 'bowtie2'){
-    bowtie2Bam.into{chNmaskBams; chBams}
+    bowtie2Bam.into{chFlagStat; chNmaskBams; chBams}
     chMappingMqc = bowtie2Logs
   }else if (params.aligner == 'hisat2'){
-    hisat2Bam.into{chNmaskBams; chBams}
+    hisat2Bam.into{chFlagStat; chNmaskBams; chBams}
     chMappingMqc = hisat2Logs
   }else if (params.aligner == 'tophat2'){
-    tophat2Bam.into{chNmaskBams; chBams}
+    tophat2Bam.into{chFlagStat; chNmaskBams; chBams}
     chMappingMqc = tophat2Logs
   }
 }
+
+
+/*
+ * Flagstats
+ */
+
+process flagStat {
+  tag "${prefix}"
+  label 'process_low'
+  publishDir "${params.outdir}/flagstat", mode: 'copy'
+
+  input:
+  set val(prefix), file(bam) from chFlagStat
+
+  output:
+  file("*.flagstat") into chFlagStatResults
+
+  script:
+  """
+  samtools flagstat ${bam} > ${prefix}.flagstat
+  """
+}
+
 
 /*****************************
  * Tag allele-specific reads
@@ -950,8 +973,9 @@ process rmDuplicates{
   set val(prefix), file(bams) from chTagBamsPicard
 
   output:
-  set val(prefix), file("*marked.bam") into chMarkedBams
-  file "*.txt" into chMarkedPicstats
+  set val(prefix), file("*nodup.bam") into chMarkedBams
+  file("*.txt") into chMarkedPicstats
+  file("*.flagstat") into chDupStat
 
   script:
   pfix=bams.toString() - ~/(.bam)?$/
@@ -960,15 +984,16 @@ process rmDuplicates{
   samtools sort ${bams} -@ ${task.cpus} -T ${prefix} -o ${pfix}_sorted.bam
   picard -Xmx4g MarkDuplicates \\
     INPUT=${pfix}_sorted.bam \\
-    OUTPUT=${pfix}_marked.bam \\
+    OUTPUT=${pfix}_nodup.bam \\
     REMOVE_DUPLICATES=true \\
     METRICS_FILE=${pfix}.MarkDuplicates.metrics.txt \\
     VALIDATION_STRINGENCY=LENIENT \\
     TMP_DIR=tmpdir
 
   ## Back to query name sort
-  samtools sort -n ${pfix}_marked.bam -@ ${task.cpus} -T ${prefix} -o ${pfix}_marked_sorted.bam
-  mv ${pfix}_marked_sorted.bam ${pfix}_marked.bam
+  samtools sort -n ${pfix}_nodup.bam -@ ${task.cpus} -T ${prefix} -o ${pfix}_nodup_sorted.bam
+  samtools flagstat ${pfix}_nodup_sorted.bam > ${prefix}_nodup.flagstat
+  mv ${pfix}_nodup_sorted.bam ${pfix}_nodup.bam
   """
 }
 
@@ -1115,6 +1140,8 @@ process get_software_versions {
   """
   echo $workflow.manifest.version &> v_main.txt
   echo $workflow.nextflow.version &> v_nextflow.txt
+  fastqc --version &> v_fastqc.txt
+  trim_galore --version &> v_trimgalore.txt
   hisat2 --version &> v_hisat2.txt
   #tophat2 --version &> v_tophat2.txt
   echo "TopHat vXXX" > v_tophat2.txt
@@ -1164,9 +1191,12 @@ process multiqc {
     file multiqc_config from chMultiqcConfig    
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
+    file ('fastqc/*') from fastqcResults.collect().ifEmpty([])
     file ('trimming/*') from trimResults.collect().ifEmpty([])
     file ('alignment/*') from chMappingMqc.collect().ifEmpty([])
     file ('alignment/*') from chMarkedPicstats.collect().ifEmpty([])
+    file ('flagstat/*') from chFlagStatResults.collect().ifEmpty([])
+    file ('flagstat/*') from chDupStat.collect().ifEmpty([])
     file ('tag/*') from chTagLog.collect().ifEmpty([])
     file ('snpsplit/*') from splitMqc.collect().ifEmpty([])    
     file ('asratio/*') from asRatioMqc.collect().ifEmpty([])
@@ -1183,10 +1213,11 @@ process multiqc {
     nmaskOpt = params.nmask ? "-n" : ""
     peOpt  = params.singleEnd ? "" : "-p"
     strandness = params.forwardStranded ? 'forward' : params.reverseStranded ? 'reverse' : 'unstranded'
+    moduleList = "-m custom_content -m bowtie2 -m star -m hisat2 -m tophat -m cutadapt -m fastqc -m picard"
     """
     stats2multiqc.sh -s ${splan} -a ${params.aligner} -d ${strandness} -f ${params.paternal} -m ${params.maternal} ${nmaskOpt} ${peOpt}
     mqc_header.py --splan ${splan} --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
-    multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml
+    multiqc . -f $rtitle $rfilename -c $multiqc_config -c multiqc-config-header.yaml ${modulesList}
     """    
 }
 
