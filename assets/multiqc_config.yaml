@@ -52,7 +52,7 @@ custom_data:
               placement: 6000
             Percent_of_aligned_reads:
               title: 'Usable Reads (%)'
-	      description: 'Percent of aligned reads (after duplicates removal if any)'
+              description: 'Percent of aligned reads (after duplicates removal if any)'
               min: 0
               max: 100
               scale: 'RdYlGn'

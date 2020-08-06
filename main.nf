@@ -1213,7 +1213,7 @@ process multiqc {
     nmaskOpt = params.nmask ? "-n" : ""
     peOpt  = params.singleEnd ? "" : "-p"
     strandness = params.forwardStranded ? 'forward' : params.reverseStranded ? 'reverse' : 'unstranded'
-    moduleList = "-m custom_content -m bowtie2 -m star -m hisat2 -m tophat -m cutadapt -m fastqc -m picard"
+    modulesList = "-m custom_content -m bowtie2 -m star -m hisat2 -m tophat -m cutadapt -m fastqc -m picard"
     """
     stats2multiqc.sh -s ${splan} -a ${params.aligner} -d ${strandness} -f ${params.paternal} -m ${params.maternal} ${nmaskOpt} ${peOpt}
     mqc_header.py --splan ${splan} --name "Allele-Specific Mapping" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
