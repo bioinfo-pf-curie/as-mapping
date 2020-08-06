@@ -128,7 +128,13 @@ do
 
     ## Duplicates
     if [ -e flagstat/${sample}_nodup.flagstat ]; then
-	n_mapped_nodup=$(grep "total" flagstat/${sample}_nodup.flagstat | awk '{print $1}')
+	if [[ ${is_pe} == "1" ]]; then
+	    n_pairs=$(grep "with itself and mate mapped" flagstat/${sample}_nodup.flagstat | awk '{print $1}')
+	    n_single=$(grep "singletons" flagstat/${sample}_nodup.flagstat | awk '{print $1}')
+	    n_mapped_nodup=$((n_pairs/2 + n_single))
+	else
+	    n_mapped_nodup=$(grep "mapped (" flagstat/${sample}_nodup.flagstat | awk '{print $1}')
+	fi
     else
 	n_mapped_nodup=${n_mapped}
     fi

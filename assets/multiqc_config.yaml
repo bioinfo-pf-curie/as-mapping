@@ -44,14 +44,14 @@ custom_data:
               scale: false
               placement: 5000
             Number_of_aligned_reads:
-              title: 'Usable Reads'
+              title: 'Processed Reads'
               description: 'Number of aligned reads (after duplicates removal if any)'
               scale: 'RdYlGn'
               format: '{:,.0f}'
               hidden: true
               placement: 6000
             Percent_of_aligned_reads:
-              title: 'Usable Reads (%)'
+              title: 'Processed Reads (%)'
               description: 'Percent of aligned reads (after duplicates removal if any)'
               min: 0
               max: 100
