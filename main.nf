@@ -279,9 +279,9 @@ if (!params.refOnly){
       .into { rawReads }
   }
 
-/*
- * Make sample plan if not available
- */
+  /*
+   * Make sample plan if not available
+   */
 
   if (params.samplePlan){
     chSplan = Channel.fromPath(params.samplePlan)
@@ -320,6 +320,7 @@ if (!params.refOnly){
   }
 }else{
   chSplan = Channel.empty()
+  rawReads = Channel.empty()
 }
 
 // Gentoypes
@@ -402,7 +403,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
 
   process prepareParentalReferenceGenome {
     label 'process_highmem'
-    publishDir "${params.outdir}/reference_genome", mode: 'copy',
+    publishDir "${params.outdir}/reference_genome/genome", mode: 'copy',
         saveAs: {filename ->
                  if (filename.indexOf("_report.txt") > 0) "logs/$filename"
                  else if (params.saveReference || params.refOnly) filename
@@ -446,7 +447,7 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
 
   process prepareNmaskReferenceGenome {
     label 'process_highmem'
-    publishDir "${params.outdir}/reference_genome", mode: 'copy',
+    publishDir "${params.outdir}/reference_genome/genome", mode: 'copy',
         saveAs: {filename ->
                  if (filename.indexOf("_report.txt") > 0) "logs/$filename"
                  else if (params.saveReference || params.refOnly) filename
@@ -843,6 +844,7 @@ if ( params.aligner == 'hisat2' && !params.refOnly){
 
 if (params.refOnly){
   chNmaskBams = Channel.empty()
+  chFlagStat = Channel.empty()
   chBams = Channel.empty()
   chMappingMqc = Channel.empty()
 }else{
