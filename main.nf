@@ -248,13 +248,13 @@ if (!params.refOnly){
         .from(file("${params.samplePlan}"))
         .splitCsv(header: false)
         .map{ row -> [ row[0], [file(row[2])]] }
-        .into { rawReads }
+        .set { rawReads }
     }else{
       Channel
         .from(file("${params.samplePlan}"))
         .splitCsv(header: false)
         .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-        .into { rawReads }
+        .set { rawReads }
     }
     params.reads=false
   }
@@ -264,13 +264,13 @@ if (!params.refOnly){
         .from(params.readPaths)
         .map { row -> [ row[0], [file(row[1][0])]] }
         .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-        .into { rawReads }
+        .set { rawReads }
     } else {
       Channel
         .from(params.readPaths)
         .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
         .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-        .into { rawReads }
+        .set { rawReads }
     }
   } else {
     Channel
@@ -422,20 +422,22 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
 
     script:
 
-    if (params.maternal != params.vcfRef && params.paternal != params.vcfRef){
-      optsStrain = "--strain ${params.paternal} --strain2 ${params.maternal}"
-    }else if (params.maternal != params.vcfRef){
-      optsStrain = "--strain ${params.maternal}"
-    }else if (params.paternal != params.vcfRef){
-      optsStrain = "--strain ${params.paternal}"
-    }
-    
-    if (params.paternal){
-      concatPat = params.paternal == params.vcfRef ? "cat genome/*.fa > ${params.vcfRef}_paternal_genome.fa" : "cat ${params.paternal}_full_sequence/*.fa > ${params.paternal}_paternal_genome.fa"
-    }
     if (params.maternal){
-      concatMat = params.maternal == params.vcfRef ? "cat genome/*.fa > ${params.vcfRef}_maternal_genome.fa" : "cat ${params.maternal}_full_sequence/*.fa* > ${params.maternal}_maternal_genome.fa"
+      optsStrainMaternal = params.maternal == params.vcfRef ? "" : "--strain ${params.maternal}"
+      concatMat = params.maternal == params.vcfRef ? "cat genome/*.fa > ${params.genome}_${params.vcfRef}_genome.fa" : "cat ${params.maternal}_full_sequence/*.fa* > ${params.genome}_${params.maternal}_genome.fa"
+    }else{
+      concatMat = ""
+      optsStrainMaternal = ""
     }
+
+    if (params.paternal){
+      optsStrainPaternal = params.paternal == params.vcfRef ? "" : params.maternal ? "--strain ${params.paternal}" : "--strain2 ${params.paternal}"
+      concatPat = params.paternal == params.vcfRef ? "cat genome/*.fa > ${params.genome}_${params.vcfRef}_genome.fa" : "cat ${params.paternal}_full_sequence/*.fa > ${params.genome}_${params.paternal}_genome.fa"
+    }else{
+      concatPat = ""
+      optsStrainPaternal = ""
+    }
+    optsStrain = "${optsStrainMaternal} ${optsStrainPaternal}"
 
     """
     mkdir genome; cd genome; faidx -x ../${reference}; cd ..
@@ -468,17 +470,17 @@ if (!params.asfasta && !params.starIndex && !params.bowtie2Index && !params.hisa
 
     script:
     if (params.maternal != params.vcfRef && params.paternal != params.vcfRef){
-      optsStrain = "--strain ${params.paternal} --strain2 ${params.maternal}"
+      optsStrain = "--strain ${params.maternal} --strain2 ${params.paternal}"
       nmaskPattern = "*dual_hybrid*_N-masked/*.fa"
-      opref = "${params.paternal}_${params.maternal}"
+      opref = "${params.genome}_${params.maternal}_${params.paternal}"
      }else if (params.maternal != params.vcfRef){
       optsStrain = "--strain ${params.maternal}"
       nmaskPattern = "*_N-masked/*.fa"
-      opref = "${params.vcfRef}_${params.maternal}"
+      opref = "${params.genome}_${params.maternal}_${params.vcfRef}"
      }else if (params.paternal != params.vcfRef){
       optsStrain = "--strain ${params.paternal}"
       nmaskPattern = "*_N-masked/*.fa"
-      opref = "${params.paternal}_${params.vcfRef}"
+      opref = "${params.genome}_${params.vcfRef}_${params.paternal}"
      }
 
     """
@@ -521,7 +523,7 @@ if ( params.aligner == 'star' && !params.starIndex ){
     file "*STAR_index" into starIdx
 
     script:
-    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\.fa)?$/
     """
     mkdir -p ${strainPrefix}_STAR_index
     STAR --runMode genomeGenerate --limitGenomeGenerateRAM 33524399488 --runThreadN ${task.cpus} --genomeDir ${strainPrefix}_STAR_index --genomeFastaFiles $fasta
@@ -542,7 +544,7 @@ if ( (params.aligner == "bowtie2" || params.aligner == "tophat2") && !params.bow
     file("${strainPrefix}_bowtie2_index") into (bowtie2Idx, tophat2Idx)
 
     script:
-    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\.fa)?$/
     base = fasta.toString() - ~/(\.fa)?(\.fasta)?(\.fas)?$/
     """
     mkdir -p ${strainPrefix}_bowtie2_index
@@ -583,7 +585,7 @@ if ( params.aligner == 'hisat2' && !params.hisat2Index ){
     file("${strainPrefix}_hisat2_index") into hisat2Idx
 
     script:
-    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\_paternal_genome.fa)?(\_maternal_genome.fa)?$/
+    strainPrefix = fasta.toString() - ~/(\_genome.fa)?(\.fa)?$/
     base = fasta.toString() - ~/(\.fa)?(\.fasta)?(\.fas)?$/
     """
     mkdir -p ${strainPrefix}_hisat2_index
@@ -712,7 +714,7 @@ if ( params.aligner == 'star' && !params.refOnly ){
 }
 
 // Bowtie2
-if ( params.aligner == 'bowtie2'  && !params.refOnly){
+if ( params.aligner == 'bowtie2'  && !params.refOnly ){
   process bowtie2 {
     tag "$prefix"
     label 'process_medium'
@@ -748,7 +750,7 @@ if ( params.aligner == 'bowtie2'  && !params.refOnly){
 
 
 // TopHat2
-if(params.aligner == 'tophat2' && !params.refOnly){
+if( params.aligner == 'tophat2' && !params.refOnly ){
   process tophat2 {
     tag "$prefix"
     label 'process_high'
@@ -799,7 +801,7 @@ if(params.aligner == 'tophat2' && !params.refOnly){
 
 
 // HiSat2
-if ( params.aligner == 'hisat2' && !params.refOnly){
+if ( params.aligner == 'hisat2' && !params.refOnly ){
   process hisat2 {
     tag "$prefix"
     label 'process_high'
@@ -847,18 +849,19 @@ if (params.refOnly){
   chFlagStat = Channel.empty()
   chBams = Channel.empty()
   chMappingMqc = Channel.empty()
+  chParentalBams = Channel.empty()
 }else{
   if (params.aligner == 'star'){
-    starBam.into{chFlagStat; chNmaskBams; chBams}
+    starBam.into{chFlagStat; chNmaskBams; chParentalBams; chBams}
     chMappingMqc = starLogs
   }else if (params.aligner == 'bowtie2'){
-    bowtie2Bam.into{chFlagStat; chNmaskBams; chBams}
+    bowtie2Bam.into{chFlagStat; chNmaskBams; chParentalBams; chBams}
     chMappingMqc = bowtie2Logs
   }else if (params.aligner == 'hisat2'){
-    hisat2Bam.into{chFlagStat; chNmaskBams; chBams}
+    hisat2Bam.into{chFlagStat; chNmaskBams; chParentalBams; chBams}
     chMappingMqc = hisat2Logs
   }else if (params.aligner == 'tophat2'){
-    tophat2Bam.into{chFlagStat; chNmaskBams; chBams}
+    tophat2Bam.into{chFlagStat; chNmaskBams; chParentalBams; chBams}
     chMappingMqc = tophat2Logs
   }
 }
@@ -900,10 +903,10 @@ process tagParentalBams {
               else filename}
 
   when:
-  !params.nmask
+  !params.nmask && params.maternal && params.paternal
 
   input:
-  set val(prefix), file(bams) from chBams.groupTuple()
+  set val(prefix), file(bams) from chParentalBams.groupTuple()
 
   output:
   set val(prefix), file("${prefix}_parentalMerged.bam") into chTagParentalBams
@@ -950,8 +953,14 @@ if (params.nmask){
   chTagNmaskBams.into{chTagBams ; chTagBamsPicard}
   tagNmaskLog.set{chTagLog}
 }else{
-  chTagParentalBams.into{chTagBams ; chTagBamsPicard}
-  tagParentalLog.set{chTagLog}
+  if (params.maternal && params.paternal){
+    chTagParentalBams.into{chTagBams ; chTagBamsPicard}
+    tagParentalLog.set{chTagLog}
+  }else{
+    chBams.set{chTagBamsPicard}
+    chTagBams = Channel.empty()
+    chTagLog = Channel.empty()
+  }
 }
 
 
@@ -1018,6 +1027,9 @@ process splitTaggedBam {
               if (filename.indexOf(".log") > 0) "logs/$filename"
               else filename}
 
+  when:
+  params.maternal && params.paternal
+
   input:
   set val(prefix), file(asBam) from chFiltBamsSplit
 
@@ -1031,52 +1043,81 @@ process splitTaggedBam {
   """
   tag2sort ${opts} ${asBam}
   snpsplit2mqc.sh *sort.txt > ${prefix}_sort.mqc
-
   """
 }
 
-genomeBams.join(chFiltBams).into{chBamCount; chBamWig}
-
+if (params.maternal && params.paternal){
+  genomeBams.join(chFiltBams).into{chBamCount; chBamWig}
+}else{
+  if (params.maternal){
+    chFiltBams
+      .map{ row -> [ row[0], null, null, file(row[1])] }
+      .set{chBamWig}
+  }else{
+    chFiltBams
+      .map{ row -> [ row[0], null, null, file(row[1])] }
+      .set{chBamWig}
+  }
+  chBamCount = Channel.empty()
+}
 
 /*************************
  * AS ratio
  */
 
-process geneASratio {
-  tag "${prefix}"
-  label 'process_medium'  
-  publishDir "${params.outdir}/asratio", mode: 'copy',
+if ( params.asratio || params.rnaseq ){
+  process geneASratio {
+    tag "${prefix}"
+    label 'process_medium'  
+    publishDir "${params.outdir}/asratio", mode: 'copy',
 
-  when:
-  params.asratio || params.rnaseq
+    input:
+    set val(prefix), file(bam1), file(bam2), file(bamTag) from chBamCount
+    file(gtf) from chGtf.collect()
 
-  input:
-  set val(prefix), file(bam1), file(bam2), file(bamTag) from chBamCount
-  file(gtf) from chGtf.collect()
+    output:
+    file("*count.txt") into asCounts
+    file("*allelicRatio.txt") into asRatio
+    file("*average.mqc") into asRatioMqc
 
-  output:
-  file("*count.txt") into asCounts
-  file("*allelicRatio.txt") into asRatio
-  file("*average.mqc") into asRatioMqc
-
-  script:
-  opts=params.singleEnd ? "" : "-p"
-  strandness = "-s 0"
-  if (params.forwardStranded){
+    script:
+    opts=params.singleEnd ? "" : "-p"
+    strandness = "-s 0"
+    if (params.forwardStranded){
       strandness = "-s 1"
-  } else if (params.reverseStranded){
+    } else if (params.reverseStranded){
       strandness = "-s 2"
+    }
+    """
+    featureCounts ${opts} ${strandness} -T ${task.cpus} -a ${gtf} -g 'gene_name' -o ${prefix}_count.txt ${bam1} ${bam2} ${bamTag}
+    awk -F '\\t' 'BEGIN{OFS="\t"; print "Gene", "Genome1", "Genome2", "ASratio", "allReads"}{\
+        if(\$1!~/^#/ && \$1!="Geneid"){if(\$7+\$8>0){as=\$7/(\$7+\$8)} else{as="NA"};\
+        print \$1,\$7,\$8,as,\$9}}' ${prefix}_count.txt >  ${prefix}_allelicRatio.txt
+    awk -F'\\t' '(NR>2 && (\$7+\$8)>0){n=split(\$2,chrom,";");as=\$7/(\$7+\$8);mr[chrom[1]]+=as;cr[chrom[1]]+=1}\
+        END{for(x in mr){print x","mr[x]/cr[x]}}' ${prefix}_count.txt | sort -k1,1V >  ${prefix}_average.mqc
+    """
   }
-  """
-  featureCounts ${opts} ${strandness} -T ${task.cpus} -a ${gtf} -g 'gene_name' -o ${prefix}_count.txt ${bam1} ${bam2} ${bamTag}
-  awk -F '\\t' 'BEGIN{OFS="\t"; print "Gene", "Genome1", "Genome2", "ASratio", "allReads"}{\
-      if(\$1!~/^#/ && \$1!="Geneid"){if(\$7+\$8>0){as=\$7/(\$7+\$8)} else{as="NA"};\
-      print \$1,\$7,\$8,as,\$9}}' ${prefix}_count.txt >  ${prefix}_allelicRatio.txt
-  awk -F'\\t' '(NR>2 && (\$7+\$8)>0){n=split(\$2,chrom,";");as=\$7/(\$7+\$8);mr[chrom[1]]+=as;cr[chrom[1]]+=1}\
-      END{for(x in mr){print x","mr[x]/cr[x]}}' ${prefix}_count.txt | sort -k1,1V >  ${prefix}_average.mqc
-  """
-}
 
+  process mergeASratio {
+    tag "${prefix}"
+    label 'process_medium'
+    publishDir "${params.outdir}/asratio", mode: 'copy',
+
+    input:
+    file(allratio) from asRatio.collect()
+
+    output:
+    file("*.csv") into mergedRatio
+
+    script:
+    """
+    header="\$(for x in ${allratio}; do printf \"\$x%.0s,\" {1..4}; done)"
+    echo " ,\$header" > mergedRatio.csv
+    xjoin.sh $allratio | tr " " "," >> mergedRatio.csv
+    awk -F"," 'NR<=2{print} NR>2{s=0;for(i=5;i<=NF;i+=4){s+=\$i}; if(s > 100){print \$0}}' mergedRatio.csv > mergedRatio_filtered.csv
+    """
+  }
+}
 
 /***********************
  * UCSC tracks
@@ -1104,30 +1145,45 @@ process bigWig {
     extend = "--extendReads"
   }    
   blacklistParams = params.blacklist ? "--blackListFileName ${BLbed}" : ""
+
+  if (bam1.size()>0 && bam2.size()>0){
   """
   nbreads=\$(samtools view -c ${bamTag})
   sf=\$(echo "10000000 \$nbreads" | awk '{printf "%.2f", \$1/\$2}')
-  
+
   samtools sort -@ ${task.cpus} -T ${prefix} -o ${prefix}_genome1_sorted.bam ${bam1}
   samtools index ${prefix}_genome1_sorted.bam
   bamCoverage -b ${prefix}_genome1_sorted.bam \\
               -o ${prefix}_genome1_norm.bigwig \\
               -p ${task.cpus} \\
-	      ${extend} \\
+              ${extend} \\
               ${blacklistParams} \\
               --scaleFactor \$sf
-
   samtools sort -@ ${task.cpus} -T ${prefix} -o ${prefix}_genome2_sorted.bam ${bam2}
   samtools index ${prefix}_genome2_sorted.bam
   bamCoverage -b ${prefix}_genome2_sorted.bam \\
               -o ${prefix}_genome2_norm.bigwig \\
               -p ${task.cpus} \\
-	      ${extend} \\
+              ${extend} \\
               ${blacklistParams} \\
               --scaleFactor \$sf
   """
-}
+  }else{
+  """
+  nbreads=\$(samtools view -c ${bamTag}) 
+  sf=\$(echo "10000000 \$nbreads" | awk '{printf "%.2f", \$1/\$2}')
 
+  samtools sort -@ ${task.cpus} -T ${prefix} -o ${prefix}_sorted.bam ${bamTag}
+  samtools index ${prefix}_sorted.bam
+  bamCoverage -b ${prefix}_sorted.bam \\
+              -o ${prefix}_norm.bigwig \\
+              -p ${task.cpus} \\
+              ${extend} \\
+              ${blacklistParams} \\
+              --scaleFactor \$sf
+  """
+  }
+}
 
 /*****************************************************
  * MultiQC
